@@ -37,6 +37,10 @@ class Trio:
             self.features['MMRstrength'+each]= np.nan
         self.features['MEGNO']= np.nan
         self.features['MEGNOstd']= np.nan
+        self.features['ThetaSTD12']= np.nan
+        self.features['ThetaSTD23']= np.nan
+
+    
         
 
     def fillVal(self, Nout):
@@ -46,6 +50,18 @@ class Trio:
                 Nout: number of datasets collected'''
         for each in self.runningList.keys():
             self.runningList[each] = [np.nan]*Nout
+        self.theta12 = np.zeros(Nout)
+        self.theta23 = np.zeros(Nout)
+        self.p2p1 = np.zeros(Nout)
+        self.p3p2 = np.zeros(Nout)
+        self.e1 = np.zeros(Nout)
+        self.e2 = np.zeros(Nout)
+        self.e3 = np.zeros(Nout)
+        self.l1 = np.zeros(Nout)
+        self.l2 = np.zeros(Nout)
+        self.l3 = np.zeros(Nout)
+        self.pomegarel12 = np.zeros(Nout)
+        self.pomegarel23 = np.zeros(Nout)
 
     def getNum(self):
         '''returns number of features collected as ran'''
@@ -73,7 +89,17 @@ class Trio:
             #calculate the strength of MMRs
             MMRs = find_strongest_MMR(sim, i1, i2)
             self.runningList['MMRstrength'+label][i] = MMRs[2]
-            
+        
+        self.p2p1[i] = ((ps[2].P/ps[1].P))
+        self.p3p2[i]=((ps[3].P/ps[2].P))
+        self.e1[i]=(ps[1].e)
+        self.e2[i]=(ps[2].e)
+        self.e3[i]=(ps[3].e)
+        self.l1[i]=(ps[1].l)
+        self.l2[i]=(ps[2].l)
+        self.l3[i]=(ps[3].l)
+        self.pomegarel12[i]=(getPomega(sim,1,2))
+        self.pomegarel23[i]=(getPomega(sim,2,3))
         
         #check rebound version, if old use .calculate_megno, otherwise use .megno, old is just version less then 4
         if float(rebound.__version__[0])<4:
@@ -115,7 +141,18 @@ class Trio:
             self.features['MMRstrength'+label] = np.median(self.runningList['MMRstrength'+label][1:])
             self.features['EMfracstd'+label]= np.std(self.runningList['EM'+label])/ self.features['EMcross'+label]
             self.features['EPstd'+label]= np.std(self.runningList['EP'+label])
-            
+        
+        ###############
+        Pratio12 = 1/np.median(p2p1)
+        Pratio32 = 1/np.median(p3p2)
+        pval12 = getval(Pratio12)
+        pval32 = getval(Pratio32)
+        #print(pomegarel12)
+        for x in range(Nout):
+            self.theta12[x]=calcTheta(self.l1[x],self.l2[x],self.pomegarel12[x],pval12)
+            self.theta23[x]=calcTheta(self.l2[x],self.l3[x],self.pomegarel23[x],pval32)
+        self.features['ThetaSTD12']= np.std(self.theta12)
+        self.features['ThetaSTD23']= np.std(self.theta23)
 
 
  ######################### Taken from celmech github.com/shadden/celmech
@@ -210,3 +247,37 @@ def find_strongest_MMR(sim, i1, i2):
 # #############################################
 def swap(a,b):
     return b,a
+
+def calcTheta(la,lb,pomegarel, val):
+    theta = (val[1]*lb) -(val[0]*la)-(val[1]-val[0])*pomegarel
+    return np.mod(theta, 2*np.pi)
+
+#WARNING VERY SLOW
+def getval( Pratio: list):
+    maxorder = 5
+    delta = 0.03
+    minperiodratio = Pratio-delta
+    maxperiodratio = Pratio+delta # too many resonances close to 1
+    if maxperiodratio >.999:
+        maxperiodratio =.999
+    res = resonant_period_ratios(minperiodratio,maxperiodratio, order=maxorder)
+    val = [10000000,10]
+    for i,each in enumerate(res):
+        if np.abs((each[0]/each[1])-Pratio)<np.abs((val[0]/val[1])-Pratio):
+            #which = i
+            
+            val = each
+    
+    
+
+    return val
+
+
+
+def getPomega(sim, i1, i2):
+    ps = sim.particles
+    evec2 = ps[i2].e*np.exp(1j*ps[i2].pomega)
+    evec1 = ps[i1].e*np.exp(1j*ps[i1].pomega)
+    erel = evec2-evec1
+    pomegarel=np.angle(erel)
+    return pomegarel
