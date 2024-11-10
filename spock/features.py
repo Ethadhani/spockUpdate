@@ -194,7 +194,7 @@ class Trio:
         self.features['ThetaSTD12']= np.std(self.theta12)
         self.features['ThetaSTD23']= np.std(self.theta23)
 
-        self.features['threeBRfillfac']= np.median(self.runningList['threeBRfill'])
+        self.features['threeBRfillfac']= np.mean(self.runningList['threeBRfill'])
         self.features['threeBRfillstd']= np.std(self.runningList['threeBRfill'])
 
 
