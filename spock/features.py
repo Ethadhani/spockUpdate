@@ -134,13 +134,13 @@ def resonant_period_ratios(min_per_ratio,max_per_ratio,order):
         raise AttributeError("min_per_ratio of {0} passed to resonant_period_ratios can't be < 0".format(min_per_ratio))
     if max_per_ratio >= 1.:
         raise AttributeError("max_per_ratio of {0} passed to resonant_period_ratios can't be >= 1".format(max_per_ratio))
-    minJ = int(np.floor(1. /(1. - min_per_ratio)))
-    maxJ = int(np.ceil(1. /(1. - max_per_ratio)))
+    minJ = int(np.floor(1. / (1. - min_per_ratio)))
+    maxJ = int(np.ceil(1. / (1. - max_per_ratio)))
     res_ratios=[(minJ-1,minJ)]
     for j in range(minJ,maxJ):
         res_ratios = res_ratios + [ ( x[1] * j - x[1] + x[0] , x[1] * j + x[0]) for x in farey_sequence(order)[1:] ]
     res_ratios = np.array(res_ratios)
-    msk = np.array( list(map( lambda x: min_per_ratio < x[0]/float(x[1]) < max_per_ratio , res_ratios )) )
+    msk = np.array( list(map( lambda x: min_per_ratio < x[0] / float(x[1]) < max_per_ratio , res_ratios )) )
     return res_ratios[msk]
 ##########################
 
@@ -159,8 +159,8 @@ def get_pairs(sim, trio):
  
     ps = sim.particles
     sortedindices = sorted(trio, key=lambda i: ps[i].a) # sort from inner to outer
-    EMcrossInner = (ps[sortedindices[1]].a-ps[sortedindices[0]].a)/ps[sortedindices[0]].a
-    EMcrossOuter = (ps[sortedindices[2]].a-ps[sortedindices[1]].a)/ps[sortedindices[1]].a
+    EMcrossInner = (ps[sortedindices[1]].a-ps[sortedindices[0]].a) / ps[sortedindices[0]].a
+    EMcrossOuter = (ps[sortedindices[2]].a-ps[sortedindices[1]].a) / ps[sortedindices[1]].a
 
     if EMcrossInner < EMcrossOuter:
         return [['near', sortedindices[0], sortedindices[1]], ['far', sortedindices[1], sortedindices[2]]]
@@ -175,10 +175,10 @@ def find_strongest_MMR(sim, i1, i2):
     n1 = ps[i1].n
     n2 = ps[i2].n
 
-    m1 = ps[i1].m/ps[0].m
-    m2 = ps[i2].m/ps[0].m
+    m1 = ps[i1].m / ps[0].m
+    m2 = ps[i2].m / ps[0].m
 
-    Pratio = n2/n1
+    Pratio = n2 / n1
 
     delta = 0.03
     if Pratio < 0 or Pratio > 1: # n < 0 = hyperbolic orbit, Pratio > 1 = orbits are crossing
@@ -190,15 +190,15 @@ def find_strongest_MMR(sim, i1, i2):
 
     # Calculating EM exactly would have to be done in celmech for each j/k res below, and would slow things down. This is good enough for approx expression
     EM = np.sqrt((ps[i1].e*np.cos(ps[i1].pomega) - ps[i2].e*np.cos(ps[i2].pomega))**2 + (ps[i1].e*np.sin(ps[i1].pomega) - ps[i2].e*np.sin(ps[i2].pomega))**2)
-    EMcross = (ps[i2].a-ps[i1].a)/ps[i1].a
+    EMcross = (ps[i2].a-ps[i1].a) / ps[i1].a
 
     j, k, maxstrength = np.nan, np.nan, 0 
     for a, b in res:
-        nres = (b*n2 - a*n1)/n1
+        nres = (b*n2 - a*n1) / n1
         if nres == 0:
             s = np.inf # still want to identify as strongest MMR if initial condition is exatly b*n2-a*n1 = 0
         else:
-            s = np.abs(np.sqrt(m1+m2)*(EM/EMcross)**((b-a)/2.)/nres)
+            s = np.abs(np.sqrt(m1+m2)*(EM / EMcross)**((b-a) / 2.) / nres)
         if s > maxstrength:
             j = b
             k = b-a
