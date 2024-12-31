@@ -26,7 +26,7 @@ def set_integrator_and_timestep(sim):
     es = np.array([p.e for p in sim.particles[1:sim.N_real]])
     if np.max(es) < 1:
         minTperi = np.min(Ps*(1-es)**1.5/np.sqrt(1+es)) # min peri passage time
-        sim.dt = 0.05*minTperi                          # Wisdom 2015 suggests 0.05
+        sim.dt = 0.015*minTperi                          # Wisdom 2015 suggests 0.05
     else:                                               # hyperbolic orbit 
         sim.dt = np.nan # so tseries gives nans, but still always gives same shape array
 
