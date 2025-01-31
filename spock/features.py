@@ -20,9 +20,10 @@ class Trio:
         self.runningList = OrderedDict()
         self.runningList['time'] = []
         self.runningList['MEGNO'] = []
-        self.runningList['3BRfillfac'] = []
+        self.runningList['threeBRfill'] = []
 
-        
+
+
         for each in ['near','far']:
             self.runningList['EM' + each] = []
             self.runningList['EP' + each] = []
@@ -40,9 +41,13 @@ class Trio:
             self.features['EPstd' + each] = np.nan
             self.features['MMRstrength' + each] = np.nan
 
-        self.features['3BRfillfac'] = np.nan
+        self.features['threeBRfillfac'] = np.nan
+        self.features['threeBRfillstd'] = np.nan
         self.features['MEGNO'] = np.nan
         self.features['MEGNOstd'] = np.nan
+        self.features['ThetaSTD12'] = np.nan
+        self.features['ThetaSTD23'] = np.nan
+        self.features['Tsec'] = np.nan
         
 
     def fillVal(self, Nout):
@@ -53,6 +58,18 @@ class Trio:
         '''
         for each in self.runningList.keys():
             self.runningList[each] = [np.nan] * Nout
+        self.theta12 = np.zeros(Nout)
+        self.theta23 = np.zeros(Nout)
+        self.p2p1 = np.zeros(Nout)
+        self.p3p2 = np.zeros(Nout)
+        self.e1 = np.zeros(Nout)
+        self.e2 = np.zeros(Nout)
+        self.e3 = np.zeros(Nout)
+        self.l1 = np.zeros(Nout)
+        self.l2 = np.zeros(Nout)
+        self.l3 = np.zeros(Nout)
+        self.pomegarel12 = np.zeros(Nout)
+        self.pomegarel23 = np.zeros(Nout)
 
     def getNum(self):
         '''Returns number of features collected as ran'''
@@ -81,6 +98,18 @@ class Trio:
             #calculate the strength of MMRs
             MMRs = find_strongest_MMR(sim, i1, i2)
             self.runningList['MMRstrength' + label][i] = MMRs[2]
+        
+        self.p2p1[i] = ((ps[2].P/ps[1].P))
+        self.p3p2[i]=((ps[3].P/ps[2].P))
+        self.e1[i]=(ps[1].e)
+        self.e2[i]=(ps[2].e)
+        self.e3[i]=(ps[3].e)
+        self.l1[i]=(ps[1].l)
+        self.l2[i]=(ps[2].l)
+        self.l3[i]=(ps[3].l)
+        self.pomegarel12[i]=(getPomega(sim,1,2))
+        self.pomegarel23[i]=(getPomega(sim,2,3))
+        self.runningList['threeBRfill'][i]= threeBRFillFac(sim, self.trio)
             
         
         # check rebound version, if old use .calculate_megno, otherwise use .megno, old is just version less then 4
@@ -135,43 +164,22 @@ class Trio:
 
             self.features['EPstd' + label] = \
                 np.std(self.runningList['EP' + label])
+        ############
+        Pratio12 = 1/np.median(self.p2p1[np.nonzero(self.p2p1)])
+        Pratio32 = 1/np.median(self.p3p2[np.nonzero(self.p3p2)])
+        pval12 = getval(Pratio12)
+        pval32 = getval(Pratio32)
+        #print(pomegarel12)
+        for x in range(Nout):
+            self.theta12[x]=calcTheta(self.l1[x],self.l2[x],self.pomegarel12[x],pval12)
+            self.theta23[x]=calcTheta(self.l2[x],self.l3[x],self.pomegarel23[x],pval32)
+        self.features['ThetaSTD12']= np.std(self.theta12)
+        self.features['ThetaSTD23']= np.std(self.theta23)
+
+        self.features['threeBRfillfac']= np.mean(self.runningList['threeBRfill'])
+        self.features['threeBRfillstd']= np.std(self.runningList['threeBRfill'])
     
-    def threeBRFillFac(sim, trio):
-        '''calculates the 3BR filling factor in acordance to petit20'''
-        ps = sim.particles
-        b0, b1,b2,b3 = ps[0], ps[trio[0]], ps[trio[1]], ps[trio[2]]
-        m0,m1,m2,m3 = b0.m,b1.m,b2.m,b3.m
-        ptot = None
 
-        #semim
-        a12 =(b1.a/b2.a)
-        a23 = (b2.a/b3.a)
-
-        #equation 43
-        d12 = 1- a12
-        d23 = 1- a23
-
-        #equation 45
-        d = (d12*d23)/(d12+d23)
-
-        #equation 19
-        mu12 = b1.P/b2.P
-        mu23 = b2.P/b3.P
-
-        #equation 21
-        eta = (mu12*(1-mu23))/(1-(mu12*mu23))
-
-        #equation 53
-        eMpow2 = (m1*m3 + m2*m3*(a12**(-2))+m1*m2*(a23**2)*((1-eta)**2))/(m0**2)
-
-        #equation 59
-        dov = ((42.9025)*(eMpow2)*(eta*((1-eta)**3)))**(0.125)
-
-        #equation 60
-
-        ptot = (dov/d)**4
-
-        return abs(ptot)
             
 
 
@@ -286,3 +294,134 @@ def find_strongest_MMR(sim, i1, i2):
 def swap(a, b):
     '''Simple swap function'''
     return b, a
+def calcTheta(la,lb,pomegarel, val):
+    theta = (val[1]*lb) -(val[0]*la)-(val[1]-val[0])*pomegarel
+    return np.mod(theta, 2*np.pi)
+
+#WARNING VERY SLOW
+def getval( Pratio: list):
+    maxorder = 5
+    delta = 0.03
+    minperiodratio = Pratio-delta
+    maxperiodratio = Pratio+delta # too many resonances close to 1
+    if maxperiodratio >.999:
+        maxperiodratio =.999
+    res = resonant_period_ratios(minperiodratio,maxperiodratio, order=maxorder)
+    val = [10000000,10]
+    for i,each in enumerate(res):
+        if np.abs((each[0]/each[1])-Pratio)<np.abs((val[0]/val[1])-Pratio):
+            #which = i
+            
+            val = each
+    
+    
+
+    return val
+
+
+
+def getPomega(sim, i1, i2):
+    ps = sim.particles
+    evec2 = ps[i2].e*np.exp(1j*ps[i2].pomega)
+    evec1 = ps[i1].e*np.exp(1j*ps[i1].pomega)
+    erel = evec2-evec1
+    pomegarel=np.angle(erel)
+    return pomegarel
+
+
+def imagMaxErel(sim, trio):
+    ecom, e13, emin, [chi12t, chi23t] = getEigMode(sim, trio)
+
+    v13 = complex(e13[0],e13[1])
+    vm = complex(emin[0],emin[1])
+    v12 = chi23t*v13-vm
+    v23 = chi12t*v13+vm
+    return v12,v23,v13
+
+def getEigMode(sim, trio):
+    '''returns the three eigen modes for a three body system when given trion.
+        
+        return: ecom, e13, emin, [chi12t,chi23t]
+    '''
+    #FIXME
+    [i1,i2,i3] = trio
+    ps = sim.particles
+    p1, p2, p3 = ps[i1], ps[i2], ps[i3]
+
+    ecom, e13, emin = [np.nan, np.nan],[np.nan, np.nan],[np.nan, np.nan]
+
+    m1, m2, m3 = p1.m, p2.m, p3.m
+    m_tot = m1 + m2 + m3
+    mu1, mu2, mu3 = m1/m_tot, m2/m_tot, m3/m_tot
+    
+    #alpha is semi major axis ratio
+    alpha12, alpha23 = p1.a/p2.a, p2.a/p3.a
+    alpha13 = alpha12*alpha23
+    #crossing ecc in Appendix A
+    ec12 = alpha12**(-1/4)*alpha23**(3/4)*alpha23**(-1/8)*(1-alpha12)
+    ec23 = alpha23**(-1/2)*alpha12**(1/8)*(1-alpha23)
+    ec13 = alpha13**(-1/2)*(1-alpha13)
+    #made up constant
+    eta = (ec12 - ec23)/ec13
+    chi12 = mu1*(1-eta)**3*(3+eta)
+    chi23 = mu3*(1+eta)**3*(3-eta)
+    chi12t = chi12/(chi12+chi23)
+    chi23t = chi23/(chi12+chi23)
+
+    
+    #rel ecc vec
+    e1x, e2x, e3x = [p.e*np.cos(p.pomega) for p in [p1,p2,p3]]
+    e1y, e2y, e3y = [p.e*np.sin(p.pomega) for p in [p1,p2,p3]]
+
+    emin = np.array([chi23t*(e3x-e2x)-chi12t*(e2x-e1x), chi23t*(e3y-e2y)-chi12t*(e2y-e1y)])
+    e13 = np.array([e3x-e1x, e3y-e1y])
+    ecom = np.array([(mu1*e1x+mu2*e2x+mu3*e3x), (mu1*e1y+mu2*e2y+mu3*e3y)])
+
+    return ecom, e13, emin, [chi12t,chi23t]
+
+def getZcrit(sim, i1, i2):
+    ps = sim.particles
+    p1 = ps[i1]
+    p2 = ps[i2]
+    t1 = ((p2.a-p1.a)/p2.a)/math.sqrt(2)
+    m1 = p1.m/ps[0].m
+    m2 = p2.m/ps[0].m
+    exp = -2.2*((m1+m2)**(1/3))*((p2.a/(p2.a-p1.a))**(4/3))
+
+
+def threeBRFillFac(sim, trio):
+    '''calculates the 3BR filling factor in acordance to petit20'''
+    ps = sim.particles
+    b0, b1,b2,b3 = ps[0], ps[trio[0]], ps[trio[1]], ps[trio[2]]
+    m0,m1,m2,m3 = b0.m,b1.m,b2.m,b3.m
+    ptot = None
+
+    #semim
+    a12 =(b1.a/b2.a)
+    a23 = (b2.a/b3.a)
+
+    #equation 43
+    d12 = 1- a12
+    d23 = 1- a23
+
+    #equation 45
+    d = (d12*d23)/(d12+d23)
+
+    #equation 19
+    mu12 = b1.P/b2.P
+    mu23 = b2.P/b3.P
+
+    #equation 21
+    eta = (mu12*(1-mu23))/(1-(mu12*mu23))
+
+    #equation 53
+    eMpow2 = (m1*m3 + m2*m3*(a12**(-2))+m1*m2*(a23**2)*((1-eta)**2))/(m0**2)
+
+    #equation 59
+    dov = ((42.9025)*(eMpow2)*(eta*((1-eta)**3)))**(0.125)
+
+    #equation 60
+
+    ptot = (dov/d)**4
+
+    return abs(ptot)
