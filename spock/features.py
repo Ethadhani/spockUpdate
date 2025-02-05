@@ -299,23 +299,24 @@ def calcTheta(la,lb,pomegarel, val):
     return np.mod(theta, 2*np.pi)
 
 #WARNING VERY SLOW
+import fractions
 def getval( Pratio: list):
-    maxorder = 5
-    delta = 0.03
-    minperiodratio = Pratio-delta
-    maxperiodratio = Pratio+delta # too many resonances close to 1
-    if maxperiodratio >.999:
-        maxperiodratio =.999
-    res = resonant_period_ratios(minperiodratio,maxperiodratio, order=maxorder)
-    val = [10000000,10]
-    for i,each in enumerate(res):
-        if np.abs((each[0]/each[1])-Pratio)<np.abs((val[0]/val[1])-Pratio):
-            #which = i
+    # maxorder = 5
+    # delta = 0.03
+    # minperiodratio = Pratio-delta
+    # maxperiodratio = Pratio+delta # too many resonances close to 1
+    # if maxperiodratio >.999:
+    #     maxperiodratio =.999
+    # res = resonant_period_ratios(minperiodratio,maxperiodratio, order=maxorder)
+    # val = [10000000,10]
+    # for i,each in enumerate(res):
+    #     if np.abs((each[0]/each[1])-Pratio)<np.abs((val[0]/val[1])-Pratio):
+    #         #which = i
             
-            val = each
+    #         val = each
     
-    #frac = fractions.Fraction(Pratio).limit_denominator(40)
-    #val = frac.numerator, frac.denominator
+    frac = fractions.Fraction(Pratio).limit_denominator(40)
+    val = frac.numerator, frac.denominator
 
     return val
 
