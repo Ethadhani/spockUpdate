@@ -47,6 +47,8 @@ class Trio:
         self.features['MEGNOstd'] = np.nan
         self.features['ThetaSTD12'] = np.nan
         self.features['ThetaSTD23'] = np.nan
+        self.features['ThetaSTD12alt'] = np.nan
+        self.features['ThetaSTD23alt'] = np.nan
         self.features['Tsec'] = np.nan
         
 
@@ -60,6 +62,8 @@ class Trio:
             self.runningList[each] = [np.nan] * Nout
         self.theta12 = np.zeros(Nout)
         self.theta23 = np.zeros(Nout)
+        self.theta12alt = np.zeros(Nout)
+        self.theta23alt = np.zeros(Nout)
         self.p2p1 = np.zeros(Nout)
         self.p3p2 = np.zeros(Nout)
         self.e1 = np.zeros(Nout)
@@ -173,8 +177,12 @@ class Trio:
         for x in range(Nout):
             self.theta12[x]=calcTheta(self.l1[x],self.l2[x],self.pomegarel12[x],pval12)
             self.theta23[x]=calcTheta(self.l2[x],self.l3[x],self.pomegarel23[x],pval32)
+            self.theta12alt[x]=calcThetaALT(self.l1[x],self.l2[x],self.pomegarel12[x],pval12)
+            self.theta23alt[x]=calcThetaALT(self.l2[x],self.l3[x],self.pomegarel23[x],pval32)
         self.features['ThetaSTD12']= np.std(self.theta12)
         self.features['ThetaSTD23']= np.std(self.theta23)
+        self.features['ThetaSTD12alt']= np.std(self.theta12alt)
+        self.features['ThetaSTD23alt']= np.std(self.theta23alt)
 
         self.features['threeBRfillfac']= np.mean(self.runningList['threeBRfill'])
         self.features['threeBRfillstd']= np.std(self.runningList['threeBRfill'])
@@ -297,26 +305,29 @@ def swap(a, b):
 def calcTheta(la,lb,pomegarel, val):
     theta = (val[1]*lb) -(val[0]*la)-(val[1]-val[0])*pomegarel
     return np.mod(theta, 2*np.pi)
+def calcThetaALT(la,lb,pomegarel, val):
+    theta = (val[1]*lb) -(val[0]*la)-(val[1]-val[0])*pomegarel
+    return np.mod(np.mod(theta, 2*np.pi)-np.pi,2*np.pi)
 
 #WARNING VERY SLOW
-import fractions
+#import fractions
 def getval( Pratio: list):
-    # maxorder = 5
-    # delta = 0.03
-    # minperiodratio = Pratio-delta
-    # maxperiodratio = Pratio+delta # too many resonances close to 1
-    # if maxperiodratio >.999:
-    #     maxperiodratio =.999
-    # res = resonant_period_ratios(minperiodratio,maxperiodratio, order=maxorder)
-    # val = [10000000,10]
-    # for i,each in enumerate(res):
-    #     if np.abs((each[0]/each[1])-Pratio)<np.abs((val[0]/val[1])-Pratio):
-    #         #which = i
+    maxorder = 5
+    delta = 0.03
+    minperiodratio = Pratio-delta
+    maxperiodratio = Pratio+delta # too many resonances close to 1
+    if maxperiodratio >.999:
+        maxperiodratio =.999
+    res = resonant_period_ratios(minperiodratio,maxperiodratio, order=maxorder)
+    val = [10000000,10]
+    for i,each in enumerate(res):
+        if np.abs((each[0]/each[1])-Pratio)<np.abs((val[0]/val[1])-Pratio):
+            #which = i
             
-    #         val = each
+            val = each
     
-    frac = fractions.Fraction(Pratio).limit_denominator(40)
-    val = frac.numerator, frac.denominator
+    # frac = fractions.Fraction(Pratio).limit_denominator(40)
+    # val = frac.numerator, frac.denominator
 
     return val
 
