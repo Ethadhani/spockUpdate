@@ -314,7 +314,8 @@ def getval( Pratio: list):
             
             val = each
     
-    
+    #frac = fractions.Fraction(Pratio).limit_denominator(40)
+    #val = frac.numerator, frac.denominator
 
     return val
 
