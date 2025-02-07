@@ -33,7 +33,8 @@ systemNum = range(labels.shape[0])
 # %%
 col = ['EMcrossnear', 'EMfracstdnear', 'EPstdnear',
         'MMRstrengthnear', 'EMcrossfar', 'EMfracstdfar', 'EPstdfar', 'MMRstrengthfar', 
-        'threeBRfillfac', 'threeBRfillstd','MEGNO', 'MEGNOstd', 'ThetaSTD12','ThetaSTD23','ThetaSTD12alt','ThetaSTD23alt','Tsec','InitialStable']
+        'threeBRfillfac', 'threeBRfillstd','MEGNO', 'MEGNOstd', 'ThetaSTD12','ThetaSTD23','ThetaSTD12alt','ThetaSTD23alt','Tsec',
+        'near','nearThetaSTD','nearThetaSTDalt','InitialStable']
 
 # %%
 spock = FeatureClassifier()
@@ -44,7 +45,9 @@ spock = FeatureClassifier()
 # %%
 def getList(features):
     '''Helper function which isolates the data list from the generate_features return'''
-    return list(features[0][0].values())+[features[1]]
+    data = list(features[0][0].values())+[features[1]]
+    data[-4]=str(data[-4])
+    return data
 
 # %%
 def getFeat(num):
@@ -71,7 +74,10 @@ if __name__ == "__main__":
         pool.close()
         pool.join()
 #formats the data correctly
-formattedFeat = pd.DataFrame(np.array(list(map(getList,features))), columns = col)
+# %%
+str(getList(features[3])[-4])
+# %%
+formattedFeat = pd.DataFrame(np.array(list(map(getList,features))), columns = list(features[0][0][0].keys())+['InitialStable'])
 
 
 # %% [markdown]
@@ -84,7 +90,7 @@ dataset = pd.DataFrame.join(formattedFeat,labels)
 # We can then save the new training data spreadsheet.
 
 # %%
-dataset.to_csv(datapath+'resTestThetaAlt.csv')
+dataset.to_csv(datapath+'resThetaData.csv')
 
 # %%
 dataset

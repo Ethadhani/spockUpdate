@@ -50,6 +50,11 @@ class Trio:
         self.features['ThetaSTD12alt'] = np.nan
         self.features['ThetaSTD23alt'] = np.nan
         self.features['Tsec'] = np.nan
+        self.features['near'] = np.nan
+        self.features['nearThetaSTD'] = np.nan
+        self.features['nearThetaSTDalt'] = np.nan
+
+
         
 
     def fillVal(self, Nout):
@@ -144,30 +149,21 @@ class Trio:
         Norbits = args[0]
         Nout = args[1]
         trio = args[2]
-        
 
-        if not np.isnan(self.runningList['MEGNO']).any(): # no nans
-            # smooth last 10% to remove oscillations around 2
-            self.features['MEGNO'] = np.median(
-                self.runningList['MEGNO'][-(Nout // 10):]
-            )
+        # if system becomes unstable, finds up until what time we have data for
+        # we will only fill using this data
+        end = (self.runningList['time'] + [np.nan]).index(np.nan)
 
-            self.features['MEGNOstd'] = np.std(
-                self.runningList['MEGNO'][(Nout // 5):]
-            )
+        #if not np.isnan(self.runningList['MEGNO']).any(): # no nans
+        self.features['MEGNO']= np.median(self.runningList['MEGNO'][int(0.9 * end):end]) # smooth last 10% to remove oscillations around 2
+        self.features['MEGNOstd']= np.std(self.runningList['MEGNO'][int(end/5):end])
 
         for label in ['near', 'far']: 
             # cut out first value (init cond) to avoid cases
-            # where user sets exactly b * n2 - a * n1 and strength is inf
-            self.features['MMRstrength' + label] = np.median(
-                self.runningList['MMRstrength' + label][1:]
-            )
-            self.features['EMfracstd' + label] = (
-                np.std(self.runningList['EM' + label]) 
-                / self.features['EMcross' + label])
-
-            self.features['EPstd' + label] = \
-                np.std(self.runningList['EP' + label])
+            # where user sets exactly b*n2 - a*n1 & strength is inf
+            self.features['MMRstrength'+label] = np.median(self.runningList['MMRstrength'+label][:end])
+            self.features['EMfracstd'+label] = np.std(self.runningList['EM'+label][:end])/ self.features['EMcross'+label]
+            self.features['EPstd'+label] = np.std(self.runningList['EP'+label][:end])
         ############
         Pratio12 = 1/np.median(self.p2p1[np.nonzero(self.p2p1)])
         Pratio32 = 1/np.median(self.p3p2[np.nonzero(self.p3p2)])
@@ -183,7 +179,15 @@ class Trio:
         self.features['ThetaSTD23']= np.std(self.theta23)
         self.features['ThetaSTD12alt']= np.std(self.theta12alt)
         self.features['ThetaSTD23alt']= np.std(self.theta23alt)
+        self.features['near'] = self.pairs[0][1:]
+        if trio[0] == self.pairs[0][1]:
+            self.features['nearThetaSTD'] = self.features['ThetaSTD12']
+            self.features['nearThetaSTDalt']= self.features['ThetaSTD12alt']
+        else:
+            self.features['nearThetaSTD'] = self.features['ThetaSTD23']
+            self.features['nearThetaSTDalt']= self.features['ThetaSTD23alt']
 
+        
         self.features['threeBRfillfac']= np.mean(self.runningList['threeBRfill'])
         self.features['threeBRfillstd']= np.std(self.runningList['threeBRfill'])
     
@@ -307,6 +311,7 @@ def calcTheta(la,lb,pomegarel, val):
     return np.mod(theta, 2*np.pi)
 def calcThetaALT(la,lb,pomegarel, val):
     theta = (val[1]*lb) -(val[0]*la)-(val[1]-val[0])*pomegarel
+    # maybe to check for ocilations around 0 since will wrap around
     return np.mod(np.mod(theta, 2*np.pi)-np.pi,2*np.pi)
 
 #WARNING VERY SLOW
