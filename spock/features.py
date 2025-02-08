@@ -433,7 +433,7 @@ def threeBRFillFac(sim, trio):
     eta = (mu12*(1-mu23))/(1-(mu12*mu23))
 
     #equation 53
-    eMpow2 = (m1*m3 + m2*m3*(a12**(-2))+m1*m2*(a23**2)*((1-eta)**2))/(m0**2)
+    eMpow2 = (m1*m3 + m2*m3*(eta**2)*(a12**(-2))+m1*m2*(a23**2)*((1-eta)**2))/(m0**2)
 
     #equation 59
     dov = ((42.9025)*(eMpow2)*(eta*((1-eta)**3)))**(0.125)
