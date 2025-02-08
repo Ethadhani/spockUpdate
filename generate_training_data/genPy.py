@@ -75,7 +75,8 @@ if __name__ == "__main__":
         pool.join()
 #formats the data correctly
 # %%
-str(getList(features[3])[-4])
+getFeat(4)
+
 # %%
 formattedFeat = pd.DataFrame(np.array(list(map(getList,features))), columns = list(features[0][0][0].keys())+['InitialStable'])
 
@@ -90,7 +91,7 @@ dataset = pd.DataFrame.join(formattedFeat,labels)
 # We can then save the new training data spreadsheet.
 
 # %%
-dataset.to_csv(datapath+'resThetaData.csv')
+dataset.to_csv(datapath+'07-02-25-thetaSTD.csv')
 
 # %%
 dataset
