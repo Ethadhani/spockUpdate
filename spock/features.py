@@ -441,5 +441,16 @@ def threeBRFillFac(sim, trio):
     #equation 60
 
     ptot = (dov/d)**4
+    if eta<0:
+        print(eta)
+        print(trio)
 
-    return abs(ptot)
+    #look at 82
+    # with warnings.catch_warnings(record=True) as w:
+    #     warnings.simplefilter("always", RuntimeWarning)
+    val= 10**(-np.log10(np.sqrt(eMpow2) * np.sqrt(eta*(1-eta)))-6.72+6.08 * d / dov)
+        # if w:
+        #     warnings.warn("calcError", UserWarning)
+        #     print(f'eMpow2: {eMpow2}\neta: {eta}\ntrio: {trio}')
+    return val
+    #return abs(ptot)
