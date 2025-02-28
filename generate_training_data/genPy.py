@@ -48,14 +48,20 @@ def getList(features):
     data = list(features[0][0].values())+[features[1]]
     data[-4]=str(data[-4])
     return data
-
+import warnings
 # %%
 def getFeat(num):
     '''when given a index of a row, loads initial conditions and returns the spock generated features'''
     #gets features based on index num
     sim = rebound.Simulation(datapath+"clean_initial_conditions.bin", snapshot=num)
     try:
-        return spock.generate_features(sim)
+        with warnings.catch_warnings(record=True) as ws:
+            warnings.simplefilter("always", RuntimeWarning)
+            temp = spock.generate_features(sim)
+            if ws:
+                print(num)
+                print('\n')
+        return temp
     except():
         return
 
@@ -91,7 +97,7 @@ dataset = pd.DataFrame.join(formattedFeat,labels)
 # We can then save the new training data spreadsheet.
 
 # %%
-dataset.to_csv(datapath+'07-02-25-thetaSTD.csv')
+dataset.to_csv(datapath+'23-02-25-thetaSTD.csv')
 
 # %%
 dataset
