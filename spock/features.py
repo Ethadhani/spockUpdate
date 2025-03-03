@@ -21,6 +21,10 @@ class Trio:
         self.runningList['time'] = []
         self.runningList['MEGNO'] = []
         self.runningList['threeBRfill'] = []
+        self.runningList['eta'] = []
+        self.runningList['nu'] = []
+
+
 
 
 
@@ -53,6 +57,8 @@ class Trio:
         self.features['near'] = np.nan
         self.features['nearThetaSTD'] = np.nan
         self.features['nearThetaSTDalt'] = np.nan
+        self.features['eta'] = np.nan
+        self.features['nu'] = np.nan
 
 
         
@@ -119,6 +125,7 @@ class Trio:
         self.pomegarel12[i]=(getPomega(sim,1,2))
         self.pomegarel23[i]=(getPomega(sim,2,3))
         self.runningList['threeBRfill'][i]= threeBRFillFac(sim, self.trio)
+        self.runningList['eta'], self.runningList['nu'] = etaNu(sim, self.trio)
             
         
         # check rebound version, if old use .calculate_megno, otherwise use .megno, old is just version less then 4
@@ -190,6 +197,9 @@ class Trio:
         
         self.features['threeBRfillfac']= np.mean(self.runningList['threeBRfill'])
         self.features['threeBRfillstd']= np.std(self.runningList['threeBRfill'])
+        self.features['eta'] = np.mean(self.runningList['eta'])
+        self.features['nu'] = np.mean(self.runningList['nu'])
+
     
 
             
@@ -406,6 +416,33 @@ def getZcrit(sim, i1, i2):
     m2 = p2.m/ps[0].m
     exp = -2.2*((m1+m2)**(1/3))*((p2.a/(p2.a-p1.a))**(4/3))
 
+def etaNu(sim, trio):
+    '''calculates eta an nu for a trio'''
+    ps = sim.particles
+    b0, b1,b2,b3 = ps[0], ps[trio[0]], ps[trio[1]], ps[trio[2]]
+    m0,m1,m2,m3 = b0.m,b1.m,b2.m,b3.m
+    ptot = None
+
+    #semim
+    a12 =(b1.a/b2.a)
+    a23 = (b2.a/b3.a)
+
+    #equation 43
+    d12 = 1- a12
+    d23 = 1- a23
+
+    #equation 45
+    d = (d12*d23)/(d12+d23)
+
+    #equation 19
+    mu12 = b1.P/b2.P
+    mu23 = b2.P/b3.P
+
+    #equation 21
+    eta = (mu12*(1-mu23))/(1-(mu12*mu23))
+    nu = (1-mu12)*(1-mu23)/(1-mu12*mu23)
+
+    return eta, nu
 
 def threeBRFillFac(sim, trio):
     '''calculates the 3BR filling factor in acordance to petit20'''
