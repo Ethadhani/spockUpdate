@@ -51,12 +51,9 @@ class Trio:
         self.features['MEGNOstd'] = np.nan
         self.features['ThetaSTD12'] = np.nan
         self.features['ThetaSTD23'] = np.nan
-        self.features['ThetaSTD12alt'] = np.nan
-        self.features['ThetaSTD23alt'] = np.nan
         self.features['Tsec'] = np.nan
         self.features['near'] = np.nan
         self.features['nearThetaSTD'] = np.nan
-        self.features['nearThetaSTDalt'] = np.nan
         self.features['eta'] = np.nan
         self.features['nu'] = np.nan
 
@@ -73,8 +70,6 @@ class Trio:
             self.runningList[each] = [np.nan] * Nout
         self.theta12 = np.zeros(Nout)
         self.theta23 = np.zeros(Nout)
-        self.theta12alt = np.zeros(Nout)
-        self.theta23alt = np.zeros(Nout)
         self.p2p1 = np.zeros(Nout)
         self.p3p2 = np.zeros(Nout)
         self.e1 = np.zeros(Nout)
@@ -180,19 +175,13 @@ class Trio:
         for x in range(Nout):
             self.theta12[x]=calcTheta(self.l1[x],self.l2[x],self.pomegarel12[x],pval12)
             self.theta23[x]=calcTheta(self.l2[x],self.l3[x],self.pomegarel23[x],pval32)
-            self.theta12alt[x]=calcThetaALT(self.l1[x],self.l2[x],self.pomegarel12[x],pval12)
-            self.theta23alt[x]=calcThetaALT(self.l2[x],self.l3[x],self.pomegarel23[x],pval32)
         self.features['ThetaSTD12']= np.std(self.theta12)
         self.features['ThetaSTD23']= np.std(self.theta23)
-        self.features['ThetaSTD12alt']= np.std(self.theta12alt)
-        self.features['ThetaSTD23alt']= np.std(self.theta23alt)
         self.features['near'] = self.pairs[0][1:]
         if trio[0] == self.pairs[0][1]:
             self.features['nearThetaSTD'] = self.features['ThetaSTD12']
-            self.features['nearThetaSTDalt']= self.features['ThetaSTD12alt']
         else:
             self.features['nearThetaSTD'] = self.features['ThetaSTD23']
-            self.features['nearThetaSTDalt']= self.features['ThetaSTD23alt']
 
         
         self.features['threeBRfillfac']= np.mean(self.runningList['threeBRfill'])
@@ -319,10 +308,7 @@ def swap(a, b):
 def calcTheta(la,lb,pomegarel, val):
     theta = (val[1]*lb) -(val[0]*la)-(val[1]-val[0])*pomegarel
     return np.mod(theta, 2*np.pi)
-def calcThetaALT(la,lb,pomegarel, val):
-    theta = (val[1]*lb) -(val[0]*la)-(val[1]-val[0])*pomegarel
-    # maybe to check for ocilations around 0 since will wrap around
-    return np.mod(np.mod(theta, 2*np.pi)-np.pi,2*np.pi)
+
 
 #WARNING VERY SLOW
 #import fractions
