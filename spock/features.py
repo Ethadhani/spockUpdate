@@ -20,6 +20,7 @@ class Trio:
         self.runningList = OrderedDict()
         self.runningList['time'] = []
         self.runningList['MEGNO'] = []
+        self.runningList['3BRfill'] = []
         
         for each in ['near','far']:
             self.runningList['EM' + each] = []
@@ -38,6 +39,7 @@ class Trio:
             self.features['MMRstrength' + each] = np.nan
         self.features['MEGNO'] = np.nan
         self.features['MEGNOstd'] = np.nan
+        self.features['3BRfill'] = np.nan
         
 
     def fillVal(self, Nout):
@@ -83,6 +85,9 @@ class Trio:
             self.runningList['MEGNO'][i] = sim.calculate_megno()
         else:
             self.runningList['MEGNO'][i] = sim.megno()
+        
+        #fills 3BRfill factor
+        self.runningList['3BRfill'][i]= threeBRFillFac(sim, self.trio)
 
         
 
@@ -130,6 +135,8 @@ class Trio:
 
             self.features['EPstd' + label] = \
                 np.std(self.runningList['EP' + label])
+        
+        self.features['3BRfill'] = np.mean(self.runningList['threeBRfill'])
             
 
 
@@ -244,3 +251,39 @@ def find_strongest_MMR(sim, i1, i2):
 def swap(a, b):
     '''Simple swap function'''
     return b, a
+
+def threeBRFillFac(sim, trio):
+    '''calculates the 3BR filling factor in acordance to petit20'''
+    ps = sim.particles
+    b0, b1,b2,b3 = ps[0], ps[trio[0]], ps[trio[1]], ps[trio[2]]
+    m0,m1,m2,m3 = b0.m,b1.m,b2.m,b3.m
+    ptot = None
+
+    #semim
+    a12 =(b1.a/b2.a)
+    a23 = (b2.a/b3.a)
+
+    #equation 43
+    d12 = 1- a12
+    d23 = 1- a23
+
+    #equation 45
+    d = (d12*d23)/(d12+d23)
+
+    #equation 19
+    nu12 = b1.P/b2.P
+    nu23 = b2.P/b3.P
+
+    #equation 21
+    eta = (nu12*(1-nu23))/(1-(nu12*nu23))
+
+    #equation 53
+    eMpow2 = (m1*m3 + m2*m3*(eta**2)*(a12**(-2))+m1*m2*(a23**2)*((1-eta)**2))/(m0**2)
+
+    #equation 59
+    dov = ((42.9025)*(eMpow2)*(eta*((1-eta)**3)))**(0.125)
+
+    #equation 60
+
+    ptot = (dov/d)**4
+    return abs(ptot)
