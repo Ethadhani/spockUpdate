@@ -46,7 +46,7 @@ spock = FeatureClassifier()
 def getList(features):
     '''Helper function which isolates the data list from the generate_features return'''
     data = list(features[0][0].values())+[features[1]]
-    data[-4]=str(data[-4])
+    data[-7]=str(data[-7])
     return data
 import warnings
 # %%
@@ -81,7 +81,7 @@ if __name__ == "__main__":
         pool.join()
 #formats the data correctly
 # %%
-getFeat(4)
+
 
 # %%
 formattedFeat = pd.DataFrame(np.array(list(map(getList,features))), columns = list(features[0][0][0].keys())+['InitialStable'])
@@ -97,7 +97,7 @@ dataset = pd.DataFrame.join(formattedFeat,labels)
 # We can then save the new training data spreadsheet.
 
 # %%
-dataset.to_csv(datapath+'02-03-25-thetaSTD.csv')
+dataset.to_csv(datapath+'22-03-25-thetaSTD.csv')
 
 # %%
 dataset

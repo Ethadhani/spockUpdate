@@ -23,6 +23,8 @@ class Trio:
         self.runningList['threeBRfill'] = []
         self.runningList['eta'] = []
         self.runningList['nu'] = []
+        self.runningList['nu12'] = []
+        self.runningList['nu23'] = []
 
 
 
@@ -56,6 +58,9 @@ class Trio:
         self.features['nearThetaSTD'] = np.nan
         self.features['eta'] = np.nan
         self.features['nu'] = np.nan
+        self.features['nu12'] = np.nan
+        self.features['nu23'] = np.nan
+
 
 
         
@@ -120,7 +125,8 @@ class Trio:
         self.pomegarel12[i]=(getPomega(sim,1,2))
         self.pomegarel23[i]=(getPomega(sim,2,3))
         self.runningList['threeBRfill'][i]= threeBRFillFac(sim, self.trio)
-        self.runningList['eta'], self.runningList['nu'] = etaNu(sim, self.trio)
+        #save the nu and eta values
+        self.runningList['eta'], self.runningList['nu'], self.runningList['nu12'], self.runningList['nu23'] = etaNu(sim, self.trio)
             
         
         # check rebound version, if old use .calculate_megno, otherwise use .megno, old is just version less then 4
@@ -188,6 +194,9 @@ class Trio:
         self.features['threeBRfillstd']= np.std(self.runningList['threeBRfill'])
         self.features['eta'] = np.mean(self.runningList['eta'])
         self.features['nu'] = np.mean(self.runningList['nu'])
+        self.features['nu12'] = np.mean(self.runningList['nu12'])
+        self.features['nu23'] = np.mean(self.runningList['nu23'])
+
 
     
 
@@ -428,7 +437,7 @@ def etaNu(sim, trio):
     eta = (mu12*(1-mu23))/(1-(mu12*mu23))
     nu = (1-mu12)*(1-mu23)/(1-mu12*mu23)
 
-    return eta, nu
+    return eta, nu, mu12, mu23
 
 def threeBRFillFac(sim, trio):
     '''calculates the 3BR filling factor in acordance to petit20'''
