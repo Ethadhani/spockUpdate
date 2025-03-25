@@ -3,6 +3,8 @@ from spock.ClassifierSeries import getsecT
 import numpy as np
 import math
 import rebound
+from celmech.resonances import resonance_pratio_span
+from celmech.resonances import resonance_jk_list
 
 
 class Trio:
@@ -26,6 +28,12 @@ class Trio:
             self.runningList['EM' + each] = []
             self.runningList['EP' + each] = []
             self.runningList['MMRstrength' + each] = []
+            self.runningList['pRat' + each] = []
+            self.runningList['mu1' + each] = []
+            self.runningList['mu2' + each] = []
+
+
+
 
         
 
@@ -37,9 +45,11 @@ class Trio:
             self.features['EMfracstd' + each] = np.nan
             self.features['EPstd' + each] = np.nan
             self.features['MMRstrength' + each] = np.nan
+            self.features['2BRfill' + each] = np.nan
+        self.features['3BRfill'] = np.nan
         self.features['MEGNO'] = np.nan
         self.features['MEGNOstd'] = np.nan
-        self.features['3BRfill'] = np.nan
+        
         
 
     def fillVal(self, Nout):
@@ -78,6 +88,14 @@ class Trio:
             #calculate the strength of MMRs
             MMRs = find_strongest_MMR(sim, i1, i2)
             self.runningList['MMRstrength' + label][i] = MMRs[2]
+            # save period ratio
+            self.runningList['pRat' + label][i] = ps[i1].P / ps[i2].P
+            # save mass ratio
+
+            self.runningList['mu1' + label][i] = m1 / ps[0].m
+            self.runningList['mu2' + label][i] = m2 / ps[0].m
+
+
             
         
         # check rebound version, if old use .calculate_megno, otherwise use .megno, old is just version less then 4
@@ -100,6 +118,7 @@ class Trio:
         for [label, i1, i2] in self.pairs:  
             # calculate crossing eccentricity
             self.features['EMcross' + label] = (ps[i2].a - ps[i1].a) / ps[i1].a
+            
         # calculate secular timescale and adds feature
         self.features['Tsec']= getsecT(sim, self.trio)
 
@@ -135,8 +154,15 @@ class Trio:
 
             self.features['EPstd' + label] = \
                 np.std(self.runningList['EP' + label])
+            
+            self.features['2BRfill' + label] = twoBRFillFac( 
+                                                            np.mean(self.runningList['pRat' + label]),
+                                                            np.mean(self.runningList['mu1' + label]),
+                                                            np.mean(self.runningList['mu2' + label]),
+                                                            np.mean(self.runningList['EM' + label])
+                                                            )
         
-        self.features['3BRfill'] = np.mean(self.runningList['threeBRfill'])
+        self.features['3BRfill'] = np.mean(self.runningList['3BRfill'])
             
 
 
@@ -287,3 +313,51 @@ def threeBRFillFac(sim, trio):
 
     ptot = (dov/d)**4
     return abs(ptot)
+
+def twoBRFillFac(pRat, mu1, mu2, EM):
+    '''Calculates the two body resonance overlap for a given pair, Hadden18
+        Param:
+            pRat: the period ratio of the two planets in question
+            mu1: the mass ratio of inner planet and sun
+            mu2: the mass ratio of outer planet and sun
+            EM: the combined eccentricity
+    '''
+    # uses periods instead of semimajor axis
+    # checking for nan
+    if pRat != pRat or EM != EM or pRat <= 0.5 or pRat >=1:
+        # if ratio is less then 1/2 then there is no first order res that is near
+        # if pRat >=1 it means something is wrong
+        # if ratio or EM are nan something is wrong
+        return np.nan
+
+    orderConsider = 5 #up to what order to consider
+    
+
+    #first we will find the first order res on either side
+    firstBelow = 0
+    firstAbove = 0
+    o = 1
+    while (firstBelow == 0 or firstAbove == 0):
+        # while we have not found the adjacent first order resonances,
+        # look for them
+        rat = o/(o+1)
+        if rat <= pRat and rat > firstBelow:
+            firstBelow = rat
+        elif rat > pRat:
+            firstAbove = rat
+        o+=1
+    # now we can generate a list of all the resonances in between along with their order
+    resList = resonance_jk_list(firstBelow, firstAbove,orderConsider)
+    sumVal = 0
+    # we can now sum all of the resonance widths
+
+    
+    Z0 = EM
+    
+    for e in resList:
+        minP, maxP = resonance_pratio_span(mu1, mu2, Z0, e[0], e[1])
+        sumVal+= maxP - minP
+    
+    #now we can multiply by the normalization factor and returl
+
+    return sumVal / (firstAbove - firstBelow)
