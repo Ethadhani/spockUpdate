@@ -31,6 +31,7 @@ class Trio:
             self.runningList['pRat' + each] = []
             self.runningList['mu1' + each] = []
             self.runningList['mu2' + each] = []
+            self.runningList['theta' + each] = []
 
 
 
@@ -46,6 +47,7 @@ class Trio:
             self.features['EPstd' + each] = np.nan
             self.features['MMRstrength' + each] = np.nan
             self.features['2BRfill' + each] = np.nan
+            self.features['thetaSTD' + each] = np.nan
         self.features['3BRfill'] = np.nan
         self.features['MEGNO'] = np.nan
         self.features['MEGNOstd'] = np.nan
@@ -78,7 +80,7 @@ class Trio:
             #calculate eccentricity vector
             e1x, e1y = ps[i1].e * np.cos(ps[i1].pomega), ps[i1].e * np.sin(ps[i1].pomega)
             e2x, e2y = ps[i2].e * np.cos(ps[i2].pomega), ps[i2].e * np.sin(ps[i2].pomega)
-            
+            pomgegaRel = np.arccos((e1x*e2x + e1y*e2y)/(ps[i1].e * ps[i2].e))
             self.runningList['time'][i]= sim.t/minP
             #crossing eccentricity
             self.runningList['EM'+label][i] = np.sqrt((e2x - e1x)**2 + (e2y - e1y)**2)
@@ -94,6 +96,8 @@ class Trio:
 
             self.runningList['mu1' + label][i] = m1 / ps[0].m
             self.runningList['mu2' + label][i] = m2 / ps[0].m
+            pval = getval(ps[i1].P / ps[i2].P)
+            self.runningList['theta' + label][i] = calcTheta(ps[i1].l, ps[i2].l, pomgegaRel, pval)
 
 
             
@@ -161,7 +165,7 @@ class Trio:
                                                             np.mean(self.runningList['mu2' + label]),
                                                             np.mean(self.runningList['EM' + label])
                                                             )
-        
+            self.features['thetaSTD' + label] = np.std(self.runningList['theta' + label])
         self.features['3BRfill'] = np.mean(self.runningList['3BRfill'])
             
 
@@ -361,3 +365,28 @@ def twoBRFillFac(pRat, mu1, mu2, EM):
     #now we can multiply by the normalization factor and returl
 
     return sumVal / (firstAbove - firstBelow)
+
+def calcTheta(la,lb,pomegarel, val):
+    theta = (val[1]*lb) -(val[0]*la)-(val[1]-val[0])*pomegarel
+    return np.mod(theta, 2*np.pi)
+
+
+def getval( Pratio: list):
+    maxorder = 5
+    delta = 0.03
+    minperiodratio = Pratio-delta
+    maxperiodratio = Pratio+delta # too many resonances close to 1
+    if maxperiodratio >.999:
+        maxperiodratio =.999
+    res = resonant_period_ratios(minperiodratio,maxperiodratio, order=maxorder)
+    val = [10000000,10]
+    for i,each in enumerate(res):
+        if np.abs((each[0]/each[1])-Pratio)<np.abs((val[0]/val[1])-Pratio):
+            #which = i
+            
+            val = each
+    
+    # frac = fractions.Fraction(Pratio).limit_denominator(40)
+    # val = frac.numerator, frac.denominator
+
+    return val
