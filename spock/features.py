@@ -73,14 +73,14 @@ class Trio:
             Note: must specify how each feature is calculated and added
         '''
         ps = sim.particles
-        
         for q, [label, i1, i2] in enumerate(self.pairs):
             m1 = ps[i1].m
             m2 = ps[i2].m
             #calculate eccentricity vector
             e1x, e1y = ps[i1].e * np.cos(ps[i1].pomega), ps[i1].e * np.sin(ps[i1].pomega)
             e2x, e2y = ps[i2].e * np.cos(ps[i2].pomega), ps[i2].e * np.sin(ps[i2].pomega)
-            pomgegaRel = np.arccos((e1x*e2x + e1y*e2y)/(ps[i1].e * ps[i2].e))
+            
+            pomegaRel = getPomega(sim, i1, i2)
             self.runningList['time'][i]= sim.t/minP
             #crossing eccentricity
             self.runningList['EM'+label][i] = np.sqrt((e2x - e1x)**2 + (e2y - e1y)**2)
@@ -97,7 +97,7 @@ class Trio:
             self.runningList['mu1' + label][i] = m1 / ps[0].m
             self.runningList['mu2' + label][i] = m2 / ps[0].m
             pval = getval(ps[i1].P / ps[i2].P)
-            self.runningList['theta' + label][i] = calcTheta(ps[i1].l, ps[i2].l, pomgegaRel, pval)
+            self.runningList['theta' + label][i] = calcTheta(ps[i1].l, ps[i2].l, pomegaRel, pval)
 
 
             
@@ -368,7 +368,7 @@ def twoBRFillFac(pRat, mu1, mu2, EM):
 
 def calcTheta(la,lb,pomegarel, val):
     theta = (val[1]*lb) -(val[0]*la)-(val[1]-val[0])*pomegarel
-    return np.mod(theta, 2*np.pi)
+    return np.mod(theta + (np.pi / 2), 2*np.pi)
 
 
 def getval( Pratio: list):
@@ -390,3 +390,11 @@ def getval( Pratio: list):
     # val = frac.numerator, frac.denominator
 
     return val
+
+def getPomega(sim, i1, i2):
+    ps = sim.particles
+    evec2 = ps[i2].e*np.exp(1j*ps[i2].pomega)
+    evec1 = ps[i1].e*np.exp(1j*ps[i1].pomega)
+    erel = evec2-evec1
+    pomegarel=np.angle(erel)
+    return pomegarel
