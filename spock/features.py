@@ -24,7 +24,7 @@ class Trio:
         self.runningList['MEGNO'] = []
         self.runningList['3BRfill'] = []
         
-        for each in ['near','far']:
+        for each in ['Max','Min']:
             self.runningList['EM' + each] = []
             self.runningList['EP' + each] = []
             self.runningList['MMRstrength' + each] = []
@@ -42,7 +42,7 @@ class Trio:
     #returned features
         self.features = OrderedDict()
 
-        for each in ['near', 'far']:
+        for each in ['Max', 'Min']:
             self.features['EMcross' + each] = np.nan
             self.features['EMfracstd' + each] = np.nan
             self.features['EPstd' + each] = np.nan
@@ -69,8 +69,8 @@ class Trio:
         '''
         for each in self.runningList.keys():
             self.runningList[each] = [np.nan] * Nout
-        self.runningList['thetaVecnear'] = 0+0j
-        self.runningList['thetaVecfar'] = 0+0j
+        self.runningList['thetaVecMax'] = 0+0j
+        self.runningList['thetaVecMin'] = 0+0j
 
 
     def getNum(self):
@@ -157,7 +157,7 @@ class Trio:
                 self.runningList['MEGNO'][(Nout // 5):]
             )
 
-        for label in ['near', 'far']: 
+        for label in ['Max', 'Min']: 
             # cut out first value (init cond) to avoid cases
             # where user sets exactly b * n2 - a * n1 and strength is inf
             self.features['MMRstrength' + label] = np.median(
@@ -234,13 +234,26 @@ def get_pairs(sim, trio):
 
     EMcrossOuter = ((ps[sortedindices[2]].a - ps[sortedindices[1]].a)
                     / ps[sortedindices[1]].a)
+    
+    a,b,c = sortedindices
+    e1x, e1y = ps[a].e * np.cos(ps[1].pomega), ps[a].e * np.sin(ps[a].pomega)
+    e2x, e2y = ps[b].e * np.cos(ps[2].pomega), ps[b].e * np.sin(ps[b].pomega)
+    e3x, e3y = ps[c].e * np.cos(ps[c].pomega), ps[c].e * np.sin(ps[c].pomega) 
 
-    if EMcrossInner < EMcrossOuter:
-        return [['near', sortedindices[0], sortedindices[1]],
-                ['far', sortedindices[1], sortedindices[2]]]
+    EM12 = np.sqrt((e2x - e1x)**2 + (e2y - e1y)**2)
+    EM23 = np.sqrt((e3x - e2x)**2 + (e3y - e2y)**2)
+    
+    
+    fill12 = twoBRFillFac(ps[a]/ps[b], ps[a].m / ps[0].m, ps[b].m / ps[0].m, EM12)
+    fill23 = twoBRFillFac(ps[b]/ps[c], ps[b].m / ps[0].m, ps[c].m / ps[0].m, EM23)
+
+
+    if fill23 < fill12:
+        return [['Max', sortedindices[0], sortedindices[1]],
+                ['Min', sortedindices[1], sortedindices[2]]]
     else:
-        return [['near', sortedindices[1], sortedindices[2]],
-                ['far', sortedindices[0], sortedindices[1]]]
+        return [['Max', sortedindices[1], sortedindices[2]],
+                ['Min', sortedindices[0], sortedindices[1]]]
 
 # taken from original spock, some comments changed
 ####################################################
