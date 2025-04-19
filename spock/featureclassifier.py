@@ -165,7 +165,7 @@ class FeatureClassifier:
         Norbits = intT # set the number of orbits to be equal to Tsec
         # set the number of data collections to be equally spaced with same
         # spacing as old spock, 80 data collections every 1e4 orbits, scaled
-        Nout = int((Norbits / 1e4) * 80)
+        Nout = int((Norbits * np.pi / 1e4) * 80)
             
             
         # featureargs is: [number of orbits, number of stops, set of trios]
