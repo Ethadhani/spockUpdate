@@ -32,6 +32,7 @@ class Trio:
             self.runningList['mu1' + each] = []
             self.runningList['mu2' + each] = []
             self.runningList['theta' + each] = []
+            self.runningList['thetaVec' + each] = []
 
 
 
@@ -48,6 +49,12 @@ class Trio:
             self.features['MMRstrength' + each] = np.nan
             self.features['2BRfill' + each] = np.nan
             self.features['thetaSTD' + each] = np.nan
+            self.features['theta' + each] = np.nan
+            self.features['thetaVecAng' + each] = np.nan
+            self.features['thetaVecMag' + each] = np.nan
+
+
+
         self.features['3BRfill'] = np.nan
         self.features['MEGNO'] = np.nan
         self.features['MEGNOstd'] = np.nan
@@ -62,6 +69,9 @@ class Trio:
         '''
         for each in self.runningList.keys():
             self.runningList[each] = [np.nan] * Nout
+        self.runningList['thetaVecnear'] = 0+0j
+        self.runningList['thetaVecfar'] = 0+0j
+
 
     def getNum(self):
         '''Returns number of features collected as ran'''
@@ -98,6 +108,7 @@ class Trio:
             self.runningList['mu2' + label][i] = m2 / ps[0].m
             pval = getval(ps[i1].P / ps[i2].P)
             self.runningList['theta' + label][i] = calcTheta(ps[i1].l, ps[i2].l, pomegaRel, pval)
+            self.runningList['thetaVec' + label] += calcThetaVec(ps[i1].l, ps[i2].l, pomegaRel, pval)
 
 
             
@@ -166,6 +177,12 @@ class Trio:
                                                             np.mean(self.runningList['EM' + label])
                                                             )
             self.features['thetaSTD' + label] = np.std(self.runningList['theta' + label])
+            self.features['theta' + label] = np.mean(self.runningList['theta' + label])
+
+            self.features['thetaVecAng' + label] = np.angle(self.runningList['thetaVec' + label])
+            self.features['thetaVecMag' + label] = np.abs(self.runningList['thetaVec' + label]) / Nout
+
+
         self.features['3BRfill'] = np.mean(self.runningList['3BRfill'])
             
 
@@ -369,6 +386,10 @@ def twoBRFillFac(pRat, mu1, mu2, EM):
 def calcTheta(la,lb,pomegarel, val):
     theta = (val[1]*lb) -(val[0]*la)-(val[1]-val[0])*pomegarel
     return np.mod(theta + (np.pi / 2), 2*np.pi)
+
+def calcThetaVec(la,lb,pomegarel, val):
+    theta = (val[1]*lb) -(val[0]*la)-(val[1]-val[0])*pomegarel
+    return np.exp(theta*1j)
 
 
 def getval( Pratio: list):
