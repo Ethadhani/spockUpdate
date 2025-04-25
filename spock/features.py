@@ -244,8 +244,8 @@ def get_pairs(sim, trio):
     EM23 = np.sqrt((e3x - e2x)**2 + (e3y - e2y)**2)
     
     
-    fill12 = twoBRFillFac(ps[a]/ps[b], ps[a].m / ps[0].m, ps[b].m / ps[0].m, EM12)
-    fill23 = twoBRFillFac(ps[b]/ps[c], ps[b].m / ps[0].m, ps[c].m / ps[0].m, EM23)
+    fill12 = twoBRFillFac(ps[a].P/ps[b].P, ps[a].m / ps[0].m, ps[b].m / ps[0].m, EM12)
+    fill23 = twoBRFillFac(ps[b].P/ps[c].P, ps[b].m / ps[0].m, ps[c].m / ps[0].m, EM23)
 
 
     if fill23 < fill12:

@@ -81,7 +81,7 @@ dataset = pd.DataFrame.join(formattedFeat,labels)
 # We can then save the new training data spreadsheet.
 
 # %%
-dataset.to_csv(datapath+'4-18-25-thetaSTDnewSortcsv')
+dataset.to_csv(datapath+'4-18-25-AliesthetaSTDnewSort.csv')
 
 # %%
 
