@@ -162,10 +162,10 @@ class FeatureClassifier:
                             'This might affect model performance')
             # if it is, default to Nbodytmax, very few systems should have this issue
             # if Nbodytmax >=1e6
-        Norbits = intT # set the number of orbits to be equal to Tsec
+        Norbits = 1#intT # set the number of orbits to be equal to Tsec
         # set the number of data collections to be equally spaced with same
         # spacing as old spock, 80 data collections every 1e4 orbits, scaled
-        Nout = int((Norbits  *  np.pi/ 1e4) * 80)
+        Nout = 3#int((Norbits  * / 1e4) * 80)
             
             
         # featureargs is: [number of orbits, number of stops, set of trios]
