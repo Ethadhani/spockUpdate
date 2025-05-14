@@ -37,6 +37,7 @@ class Trio:
 
 
 
+
         
 
     #returned features
@@ -50,8 +51,14 @@ class Trio:
             self.features['2BRfill' + each] = np.nan
             self.features['thetaSTD' + each] = np.nan
             self.features['theta' + each] = np.nan
-            self.features['thetaVecAng' + each] = np.nan
-            self.features['thetaVecMag' + each] = np.nan
+            self.features['theta1VecAng' + each] = np.nan
+            self.features['theta1VecMag' + each] = np.nan
+            self.features['theta2VecAng' + each] = np.nan
+            self.features['theta2VecMag' + each] = np.nan
+            self.features['EM' + each] = np.nan
+            self.features['PeriodInt'+each] = np.nan
+            self.features['Prat'+each] = np.nan
+
 
 
 
@@ -61,7 +68,7 @@ class Trio:
         
         
 
-    def fillVal(self, Nout):
+    def fillVal(self, Nout, sim):
         '''Fills with nan values
         
             Arguments: 
@@ -69,7 +76,12 @@ class Trio:
         '''
         for each in self.runningList.keys():
             self.runningList[each] = [np.nan] * Nout
-        self.runningList['thetaVecMax'] = 0+0j
+        ps = sim.particles
+        for [label, i1, i2] in self.pairs:
+            Prat = ps[i1].P / ps[i2].P
+            resonance_jk_list(Prat*.999, Prat*1.001, 5)
+            self.runningList['thetaVec'+label] = 
+        self.runningList['thetaVecMax'] = np.complex
         self.runningList['thetaVecMin'] = 0+0j
 
 
@@ -133,6 +145,19 @@ class Trio:
         for [label, i1, i2] in self.pairs:  
             # calculate crossing eccentricity
             self.features['EMcross' + label] = (ps[i2].a - ps[i1].a) / ps[i1].a
+            pval = str(getval(ps[i1].P / ps[i2].P))
+            self.features['PeriodInt'+label] = str(pval)
+            self.features['Prat'+label] = ps[i1].P / ps[i2].P
+            
+            #calculate eccentricity vector
+            e1x, e1y = ps[i1].e * np.cos(ps[i1].pomega), ps[i1].e * np.sin(ps[i1].pomega)
+            e2x, e2y = ps[i2].e * np.cos(ps[i2].pomega), ps[i2].e * np.sin(ps[i2].pomega)
+            
+            #crossing eccentricity
+            self.features['EM'+label] = np.sqrt((e2x - e1x)**2 + (e2y - e1y)**2)
+            
+
+
             
         # calculate secular timescale and adds feature
         self.features['Tsec']= getsecT(sim, self.trio)
@@ -166,7 +191,6 @@ class Trio:
             self.features['EMfracstd' + label] = (
                 np.std(self.runningList['EM' + label]) 
                 / self.features['EMcross' + label])
-
             self.features['EPstd' + label] = \
                 np.std(self.runningList['EP' + label])
             
@@ -400,8 +424,12 @@ def calcTheta(la,lb,pomegarel, val):
     theta = (val[1]*lb) -(val[0]*la)-(val[1]-val[0])*pomegarel
     return np.mod(theta + (np.pi / 2), 2*np.pi)
 
-def calcThetaVec(la,lb,pomegarel, val):
+def calc1ThetaVec(la,lb,pomegarel, val):
     theta = (val[1]*lb) -(val[0]*la)-(val[1]-val[0])*pomegarel
+    return np.exp(theta*1j)
+def calc2ThetaVec(la,lb,pomegarel, val):
+    theta = (val[1]*lb) -(val[0]*la)-(val[1]-val[0])*pomegarel
+    # rule is pomegas have to add up to val1 - val0, ps[1].pomega, try each combo and keep track, order + 1 combinations
     return np.exp(theta*1j)
 
 

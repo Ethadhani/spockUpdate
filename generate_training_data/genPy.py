@@ -20,6 +20,7 @@ from spock import FeatureClassifier
 datapath = '../../cleanData/csvs/resonant/'
 labels = pd.read_csv(datapath+'sim_labels.csv')
 
+
 # %% [markdown]
 # We can now generate the set of system indices based on the labels
 
@@ -81,7 +82,7 @@ dataset = pd.DataFrame.join(formattedFeat,labels)
 # We can then save the new training data spreadsheet.
 
 # %%
-dataset.to_csv(datapath+'4-25-25-newSortMinInt.csv')
+dataset.to_csv(datapath+'5-13-25-getHaddenFixed.csv')
 
 # %%
 

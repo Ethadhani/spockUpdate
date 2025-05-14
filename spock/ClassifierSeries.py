@@ -39,7 +39,7 @@ def get_tseries(sim, args):
         # fills triopairs with each pair, 
         # and fills triotseries with the Trio class 
         triotseries.append(features.Trio(trio, sim))
-        triotseries[tr].fillVal(Nout)
+        triotseries[tr].fillVal(Nout, sim)
         # puts in the valeus that depend on initial cond
         triotseries[tr].startingFeatures(sim) 
         # triotseries will be a list of the obj that have all the data and Trio
