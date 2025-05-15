@@ -27,6 +27,10 @@ class Trio:
             self.runningList['EM' + label] = []
             self.runningList['EP' + label] = []
             self.runningList['MMRstrength' + label] = []
+            self.runningList['pRat' + label] = []
+            self.runningList['mu1' + label] = []
+            self.runningList['mu2' + label] = []
+
 
         
 
@@ -78,6 +82,11 @@ class Trio:
             #calculate the strength of MMRs
             MMRs = find_strongest_MMR(sim, i1, i2)
             self.runningList['MMRstrength' + label][i] = MMRs[2]
+
+            # save mass ratios and integer period ratios
+            self.runningList['mu1' + label][i] = m1 / ps[0].m
+            self.runningList['mu2' + label][i] = m2 / ps[0].m
+            self.runningList['pRat' + label][i] = ps[i1].P / ps[i2].P
             
         
         # check rebound version, if old use .calculate_megno, otherwise use .megno, old is just version less then 4
@@ -132,6 +141,15 @@ class Trio:
 
             self.features['EPstd' + label] = \
                 np.std(self.runningList['EP' + label])
+            
+            # calculate the two body filling factor based on the avg behavior
+
+            self.features['2BRfill' + label] = twoBRFillFac( 
+                                                            np.nanmean(self.runningList['pRat' + label]),
+                                                            np.nanmean(self.runningList['mu1' + label]),
+                                                            np.nanmean(self.runningList['mu2' + label]),
+                                                            np.nanmean(self.runningList['EM' + label])
+                                                            )
             
 
 
