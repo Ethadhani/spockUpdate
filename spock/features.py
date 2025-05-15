@@ -1,5 +1,7 @@
 from collections import OrderedDict
 from spock.ClassifierSeries import getsecT
+from celmech.resonances import resonance_pratio_span
+from celmech.resonances import resonance_jk_list
 import numpy as np
 import math
 import rebound
@@ -21,21 +23,21 @@ class Trio:
         self.runningList['time'] = []
         self.runningList['MEGNO'] = []
         
-        for each in ['near','far']:
-            self.runningList['EM' + each] = []
-            self.runningList['EP' + each] = []
-            self.runningList['MMRstrength' + each] = []
+        for [label, i1, i2] in self.pairs:
+            self.runningList['EM' + label] = []
+            self.runningList['EP' + label] = []
+            self.runningList['MMRstrength' + label] = []
 
         
 
     #returned features
         self.features = OrderedDict()
 
-        for each in ['near', 'far']:
-            self.features['EMcross' + each] = np.nan
-            self.features['EMfracstd' + each] = np.nan
-            self.features['EPstd' + each] = np.nan
-            self.features['MMRstrength' + each] = np.nan
+        for [label, i1, i2] in self.pairs:
+            self.features['EMcross' + label] = np.nan
+            self.features['EMfracstd' + label] = np.nan
+            self.features['EPstd' + label] = np.nan
+            self.features['MMRstrength' + label] = np.nan
         self.features['MEGNO'] = np.nan
         self.features['MEGNOstd'] = np.nan
         
@@ -118,7 +120,7 @@ class Trio:
                 self.runningList['MEGNO'][(Nout // 5):]
             )
 
-        for label in ['near', 'far']: 
+        for [label, i1, i2] in self.pairs: 
             # cut out first value (init cond) to avoid cases
             # where user sets exactly b * n2 - a * n1 and strength is inf
             self.features['MMRstrength' + label] = np.median(
@@ -160,7 +162,7 @@ def resonant_period_ratios(min_per_ratio,max_per_ratio,order):
 ##########################
 
 # sorts out which pair of planets has a smaller EMcross, labels that pair inner, other adjacent pair outer
-# returns a list of two lists, with [label (near or far), i1, i2], where i1 and i2 are the indices, with i1 
+# returns a list of two lists, with [label, i1, i2], where i1 and i2 are the indices, with i1 
 # having the smaller semimajor axis
 
 def get_pairs(sim, trio):
@@ -169,24 +171,37 @@ def get_pairs(sim, trio):
     Arguments:
         sim: simulation in question
         trio: indicies of the 3 particles in question, formatted as [p1, p2, p3]
-    return: returns the two pairs in question, formatted as 
-                [[near pair, index, index], [far pair, index, index]]
+    return: returns the two pairs in question, formatted based on the magnitude of 
+            the two body filling factor between said pair
+                [[Max 2BR fill, index, index], [Min 2BR fill, index, index]]
     '''
  
     ps = sim.particles
     sortedindices = sorted(trio, key = lambda i: ps[i].a) # sort from inner to outer
-    EMcrossInner = ((ps[sortedindices[1]].a - ps[sortedindices[0]].a)
-                    / ps[sortedindices[0]].a)
+    
+    a,b,c = sortedindices
 
-    EMcrossOuter = ((ps[sortedindices[2]].a - ps[sortedindices[1]].a)
-                    / ps[sortedindices[1]].a)
+    # Calculate the eccentricity vectors
+    eveca = ps[a].e*np.exp(1j*ps[a].pomega)
+    evecb = ps[b].e*np.exp(1j*ps[b].pomega)
+    evecc = ps[c].e*np.exp(1j*ps[c].pomega)
 
-    if EMcrossInner < EMcrossOuter:
-        return [['near', sortedindices[0], sortedindices[1]],
-                ['far', sortedindices[1], sortedindices[2]]]
+    # Calculate relative eccentricity magnitude
+
+    EMab = np.abs(evecb - eveca)
+    EMbc = np.abs(evecc - evecb)
+    
+    # Calculate the two body filling factor
+    fillab = twoBRFillFac(ps[a].P/ps[b].P, ps[a].m / ps[0].m, ps[b].m / ps[0].m, EMab)
+    fillbc = twoBRFillFac(ps[b].P/ps[c].P, ps[b].m / ps[0].m, ps[c].m / ps[0].m, EMbc)
+
+
+    if fillbc < fillab:
+        return [['Max', sortedindices[0], sortedindices[1]],
+                ['Min', sortedindices[1], sortedindices[2]]]
     else:
-        return [['near', sortedindices[1], sortedindices[2]],
-                ['far', sortedindices[0], sortedindices[1]]]
+        return [['Max', sortedindices[1], sortedindices[2]],
+                ['Min', sortedindices[0], sortedindices[1]]]
 
 # taken from original spock, some comments changed
 ####################################################
@@ -244,3 +259,53 @@ def find_strongest_MMR(sim, i1, i2):
 def swap(a, b):
     '''Simple swap function'''
     return b, a
+
+
+def twoBRFillFac(pRat, mu1, mu2, EM):
+    '''Calculates the two body resonance overlap filling factor for a given pair.
+        Derived in Hadden 2018
+        Param:
+            pRat: the period ratio of the two planets in question
+            mu1: the mass ratio of inner planet and sun
+            mu2: the mass ratio of outer planet and sun
+            EM: the combined eccentricity
+    '''
+    # uses periods instead of semimajor axis
+    # checking for nan
+    if pRat != pRat or EM != EM or pRat <= 0.5 or pRat >=1:
+        # if ratio is less then 1/2 then there is no first order res that is near
+        # if pRat >=1 it means something is wrong
+        # if ratio or EM are nan something is wrong
+        return np.nan
+
+    orderConsider = 5 # up to what order to consider
+    
+
+    #first we will find the first order res on either side
+    firstBelow = 0
+    firstAbove = 0
+    o = 1
+    while (firstBelow == 0 or firstAbove == 0):
+        # while we have not found the adjacent first order resonances,
+        # look for them
+        rat = o/(o+1)
+        if rat <= pRat and rat > firstBelow:
+            firstBelow = rat
+        elif rat > pRat:
+            firstAbove = rat
+        o+=1
+    # now we can generate a list of all the resonances in between along with their order
+    resList = resonance_jk_list(firstBelow, firstAbove,orderConsider)
+    sumVal = 0
+    # we can now sum all of the resonance widths
+
+    
+    Z0 = EM
+    
+    for e in resList:
+        minP, maxP = resonance_pratio_span(mu1, mu2, Z0, e[0], e[1])
+        sumVal+= maxP - minP
+    
+    #now we can multiply by the normalization factor and returl
+
+    return sumVal / (firstAbove - firstBelow)
