@@ -18,11 +18,16 @@ class Trio:
         self.trio = trio
         self.pairs = get_pairs(sim, trio)
         
-        # innitialize running list which keeps track of data during simulation
+        # initialize running list which keeps track of data during simulation
         self.runningList = OrderedDict()
         self.runningList['time'] = []
         self.runningList['MEGNO'] = []
+
+        # initialize conjunction angle information
+
+        self.theta = OrderedDict()
         
+        #initiate running lists and calculate the order
         for [label, i1, i2] in self.pairs:
             self.runningList['EM' + label] = []
             self.runningList['EP' + label] = []
@@ -31,7 +36,12 @@ class Trio:
             self.runningList['mu1' + label] = []
             self.runningList['mu2' + label] = []
 
+            self.theta['order' + label] = []
+            self.theta['vector' + label] = []
+            self.theta['pRatio' + label] = []
 
+
+        
         
 
     #returned features
@@ -42,6 +52,7 @@ class Trio:
             self.features['EMfracstd' + label] = np.nan
             self.features['EPstd' + label] = np.nan
             self.features['MMRstrength' + label] = np.nan
+            self.features['conjunctionMag' + label] = np.nan
         self.features['MEGNO'] = np.nan
         self.features['MEGNOstd'] = np.nan
         
@@ -87,6 +98,19 @@ class Trio:
             self.runningList['mu1' + label][i] = m1 / ps[0].m
             self.runningList['mu2' + label][i] = m2 / ps[0].m
             self.runningList['pRat' + label][i] = ps[i1].P / ps[i2].P
+
+            # calculates the conjunction angle based on each possible formula
+            order = self.theta['order' + label]
+            for o in range(order + 1):
+                self.theta['vector' + label][o] += calcThetaVec(
+                    ps[i1].l, 
+                    ps[i1].pomega,
+                    o,
+                    ps[i2].l,
+                    ps[i2].pomega,
+                    order - o,
+                    self.theta['pRatio' + label]
+                    )
             
         
         # check rebound version, if old use .calculate_megno, otherwise use .megno, old is just version less then 4
@@ -106,6 +130,10 @@ class Trio:
         for [label, i1, i2] in self.pairs:  
             # calculate crossing eccentricity
             self.features['EMcross' + label] = (ps[i2].a - ps[i1].a) / ps[i1].a
+            pRat = getIntPrat(ps[i1].P/ps[i2].P)
+            self.theta['pRatio' + label] = pRat
+            self.theta['order' + label] = pRat[1] - pRat[0]
+            self.theta['vector' + label] = np.zeros(pRat[1] - pRat[0] + 1, dtype = complex)
         # calculate secular timescale and adds feature
         self.features['Tsec']= getsecT(sim, self.trio)
 
@@ -118,7 +146,7 @@ class Trio:
         Nout = args[1]
         trio = args[2]
         
-
+        
         if not np.isnan(self.runningList['MEGNO']).any(): # no nans
             # smooth last 10% to remove oscillations around 2
             self.features['MEGNO'] = np.median(
@@ -150,6 +178,8 @@ class Trio:
                                                             np.nanmean(self.runningList['mu2' + label]),
                                                             np.nanmean(self.runningList['EM' + label])
                                                             )
+            # selects the conjunction angle vector for the strongest resonance and normalizes
+            self.features['conjunctionMag' + label] = np.max(np.abs(self.theta['vector' + label])) / Nout
             
 
 
@@ -327,3 +357,28 @@ def twoBRFillFac(pRat, mu1, mu2, EM):
     #now we can multiply by the normalization factor and returl
 
     return sumVal / (firstAbove - firstBelow)
+
+
+def getIntPrat( Pratio: list):
+    maxorder = 5
+    delta = 0.03
+    minperiodratio = Pratio-delta
+    maxperiodratio = Pratio+delta # too many resonances close to 1
+    if maxperiodratio >.999:
+        maxperiodratio =.999
+    res = resonant_period_ratios(minperiodratio,maxperiodratio, order=maxorder)
+    ratio = [10000000,10]
+    for i,each in enumerate(res):
+        if np.abs((each[0]/each[1])-Pratio)<np.abs((ratio[0]/ratio[1])-Pratio):
+            #which = i
+            
+            ratio = each
+    
+    # frac = fractions.Fraction(Pratio).limit_denominator(40)
+    # val = frac.numerator, frac.denominator
+
+    return ratio
+
+def calcThetaVec(la, pomegaa, coefa, lb, pomegab, coefb, val,):
+    theta = (val[1]*lb) - (val[0]*la) - (pomegaa * coefa) -(pomegab * coefb)
+    return np.exp(theta*1j)
