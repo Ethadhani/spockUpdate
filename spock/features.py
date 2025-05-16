@@ -39,6 +39,8 @@ class Trio:
             self.theta['order' + label] = []
             self.theta['vector' + label] = []
             self.theta['pRatio' + label] = []
+            self.theta['relvector' + label] = []
+
 
 
         
@@ -53,6 +55,7 @@ class Trio:
             self.features['EPstd' + label] = np.nan
             self.features['MMRstrength' + label] = np.nan
             self.features['conjunctionMag' + label] = np.nan
+            self.features['relConjunctionMag' + label] = np.nan
         self.features['MEGNO'] = np.nan
         self.features['MEGNOstd'] = np.nan
         
@@ -83,7 +86,7 @@ class Trio:
             #calculate eccentricity vector
             e1x, e1y = ps[i1].e * np.cos(ps[i1].pomega), ps[i1].e * np.sin(ps[i1].pomega)
             e2x, e2y = ps[i2].e * np.cos(ps[i2].pomega), ps[i2].e * np.sin(ps[i2].pomega)
-            
+            erel = ps[i2].e*np.exp(ps[i2].pomega*1j)-ps[i1].e*np.exp(ps[i1].pomega*1j)
             self.runningList['time'][i]= sim.t/minP
             #crossing eccentricity
             self.runningList['EM'+label][i] = np.sqrt((e2x - e1x)**2 + (e2y - e1y)**2)
@@ -111,6 +114,11 @@ class Trio:
                     order - o,
                     self.theta['pRatio' + label]
                     )
+            self.theta['relvector' + label] += calcThetaRelVec(
+                ps[i1].l, ps[i2].l, 
+                self.theta['pRatio' + label],
+                np.angle(erel)
+                )
             
         
         # check rebound version, if old use .calculate_megno, otherwise use .megno, old is just version less then 4
@@ -134,6 +142,7 @@ class Trio:
             self.theta['pRatio' + label] = pRat
             self.theta['order' + label] = pRat[1] - pRat[0]
             self.theta['vector' + label] = np.zeros(pRat[1] - pRat[0] + 1, dtype = complex)
+            self.theta['relvector' + label] = 0.0j
         # calculate secular timescale and adds feature
         self.features['Tsec']= getsecT(sim, self.trio)
 
@@ -180,6 +189,9 @@ class Trio:
                                                             )
             # selects the conjunction angle vector for the strongest resonance and normalizes
             self.features['conjunctionMag' + label] = np.max(np.abs(self.theta['vector' + label])) / Nout
+
+            # calculates conjunction angle consistency based on relative pomega
+            self.features['relConjunctionMag' + label] = np.abs(self.theta['relvector' + label]) / Nout
             
 
 
@@ -381,4 +393,9 @@ def getIntPrat( Pratio: list):
 
 def calcThetaVec(la, pomegaa, coefa, lb, pomegab, coefb, val,):
     theta = (val[1]*lb) - (val[0]*la) - (pomegaa * coefa) -(pomegab * coefb)
+    return np.exp(theta*1j)
+
+
+def calcThetaRelVec(la, lb, val, pomegarel):
+    theta = (val[1]*lb) -(val[0]*la)-(val[1]-val[0])*pomegarel
     return np.exp(theta*1j)
