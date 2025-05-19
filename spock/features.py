@@ -5,7 +5,7 @@ from celmech.resonances import resonance_jk_list
 import numpy as np
 import math
 import rebound
-
+MAXORDER = 3
 
 class Trio:
     def __init__(self, trio, sim):
@@ -192,7 +192,6 @@ class Trio:
 
             # calculates conjunction angle consistency based on relative pomega
             self.features['relConjunctionMag' + label] = np.abs(self.theta['relvector' + label]) / Nout
-            
 
 
  ######################### Taken from celmech github.com/shadden/celmech
@@ -338,7 +337,7 @@ def twoBRFillFac(pRat, mu1, mu2, EM):
         # if ratio or EM are nan something is wrong
         return np.nan
 
-    orderConsider = 5 # up to what order to consider
+    orderConsider = MAXORDER # up to what order to consider
     
 
     #first we will find the first order res on either side
@@ -372,8 +371,8 @@ def twoBRFillFac(pRat, mu1, mu2, EM):
 
 
 def getIntPrat( Pratio: list):
-    maxorder = 5
-    delta = 0.03
+    maxorder = MAXORDER
+    delta = 0.05
     minperiodratio = Pratio-delta
     maxperiodratio = Pratio+delta # too many resonances close to 1
     if maxperiodratio >.999:
