@@ -58,6 +58,7 @@ class Trio:
             self.features['relConjunctionMag' + label] = np.nan
         self.features['MEGNO'] = np.nan
         self.features['MEGNOstd'] = np.nan
+        self.features['massOrder'] = np.nan
         
 
     def fillVal(self, Nout):
@@ -145,6 +146,16 @@ class Trio:
             self.theta['relvector' + label] = 0.0j
         # calculate secular timescale and adds feature
         self.features['Tsec']= getsecT(sim, self.trio)
+
+        massSum = 0
+        massOrder = [1,2,3]
+        massOrder.sort(key=lambda x: ps[x].m)
+        for i in range(1,4):
+            massSum += np.abs(ps[i].m - ps[massOrder[i-1]].m)
+
+        massSum = massSum / (ps[1].m + ps[2].m + ps[3].m)
+        self.features['massOrder'] = massSum
+            
 
     def fill_features(self, args):
         '''fills the final set of features that are returned to the ML model.
