@@ -22,6 +22,7 @@ class Trio:
         self.runningList = OrderedDict()
         self.runningList['time'] = []
         self.runningList['MEGNO'] = []
+        self.runningList['threeBRfill'] = []
 
         # initialize conjunction angle information
 
@@ -59,6 +60,7 @@ class Trio:
         self.features['MEGNO'] = np.nan
         self.features['MEGNOstd'] = np.nan
         self.features['massOrder'] = np.nan
+        self.features['threeBRfillfac'] = np.nan
         
 
     def fillVal(self, Nout):
@@ -102,6 +104,9 @@ class Trio:
             self.runningList['mu1' + label][i] = m1 / ps[0].m
             self.runningList['mu2' + label][i] = m2 / ps[0].m
             self.runningList['pRat' + label][i] = ps[i1].P / ps[i2].P
+            
+            #calculate 3brfill
+            self.runningList['threeBRfill'][i]= threeBRFillFac(sim, self.trio)
 
             # calculates the conjunction angle based on each possible formula
             order = self.theta['order' + label]
@@ -203,6 +208,8 @@ class Trio:
 
             # calculates conjunction angle consistency based on relative pomega
             self.features['relConjunctionMag' + label] = np.abs(self.theta['relvector' + label]) / Nout
+            self.features['threeBRfillfac']= np.mean(self.runningList['threeBRfill'])
+
 
 
  ######################### Taken from celmech github.com/shadden/celmech
@@ -409,3 +416,40 @@ def calcThetaVec(la, pomegaa, coefa, lb, pomegab, coefb, val,):
 def calcThetaRelVec(la, lb, val, pomegarel):
     theta = (val[1]*lb) -(val[0]*la)-(val[1]-val[0])*pomegarel
     return np.exp(theta*1j)
+
+
+def threeBRFillFac(sim, trio):
+    '''calculates the 3BR filling factor in acordance to petit20'''
+    ps = sim.particles
+    b0, b1,b2,b3 = ps[0], ps[trio[0]], ps[trio[1]], ps[trio[2]]
+    m0,m1,m2,m3 = b0.m,b1.m,b2.m,b3.m
+    ptot = None
+
+    #semim
+    a12 =(b1.a/b2.a)
+    a23 = (b2.a/b3.a)
+
+    #equation 43
+    d12 = 1- a12
+    d23 = 1- a23
+
+    #equation 45
+    d = (d12*d23)/(d12+d23)
+
+    #equation 19
+    mu12 = b1.P/b2.P
+    mu23 = b2.P/b3.P
+
+    #equation 21
+    eta = (mu12*(1-mu23))/(1-(mu12*mu23))
+
+    #equation 53
+    eMpow2 = (m1*m3 + m2*m3*(eta**2)*(a12**(-2))+m1*m2*(a23**2)*((1-eta)**2))/(m0**2)
+
+    #equation 59
+    dov = ((42.9025)*(eMpow2)*(eta*((1-eta)**3)))**(0.125)
+
+    #equation 60
+
+    ptot = (dov/d)**4
+    return abs(ptot)
