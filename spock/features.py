@@ -44,6 +44,8 @@ class Trio:
 
 
 
+
+
         
         
 
@@ -57,6 +59,11 @@ class Trio:
             self.features['MMRstrength' + label] = np.nan
             self.features['conjunctionMag' + label] = np.nan
             self.features['relConjunctionMag' + label] = np.nan
+            self.features['pomega1Theta' + label] = np.nan
+            self.features['pomega2Theta' + label] = np.nan
+            self.features['p' + label] = np.nan
+            self.features['q' + label] = np.nan
+
         self.features['MEGNO'] = np.nan
         self.features['MEGNOstd'] = np.nan
         self.features['massOrder'] = np.nan
@@ -205,6 +212,10 @@ class Trio:
                                                             )
             # selects the conjunction angle vector for the strongest resonance and normalizes
             self.features['conjunctionMag' + label] = np.max(np.abs(self.theta['vector' + label])) / Nout
+            self.features['pomega1Theta' + label] = np.abs(self.theta['vector' + label][-1]) / Nout
+            self.features['pomega2Theta' + label] = np.abs(self.theta['vector' + label][0]) / Nout
+            self.features['p' + label] = np.max(self.theta['pRatio' + label])
+            self.features['q' + label] = np.max(self.theta['order' + label])
 
             # calculates conjunction angle consistency based on relative pomega
             self.features['relConjunctionMag' + label] = np.abs(self.theta['relvector' + label]) / Nout
