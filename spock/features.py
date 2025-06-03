@@ -5,7 +5,7 @@ from celmech.resonances import resonance_jk_list
 import numpy as np
 import math
 import rebound
-MAXORDER = 3
+MAXORDER = 4
 
 class Trio:
     def __init__(self, trio, sim):
@@ -151,6 +151,13 @@ class Trio:
         for [label, i1, i2] in self.pairs:  
             # calculate crossing eccentricity
             self.features['EMcross' + label] = (ps[i2].a - ps[i1].a) / ps[i1].a
+
+            try:
+                MMRS = find_strongest_MMR(sim,i1, i2)
+                assert MMRS[0] != np.nan
+                pRat = [MMRS[0]-MMRS[1], MMRS[0]]
+            except:
+                pRat = getIntPrat(ps[i1].P/ps[i2].P)
             pRat = getIntPrat(ps[i1].P/ps[i2].P)
             self.theta['pRatio' + label] = pRat
             self.theta['order' + label] = pRat[1] - pRat[0]
@@ -303,7 +310,7 @@ def find_strongest_MMR(sim, i1, i2):
         return: information about the resonance, the third item (index 2)
                 is the maximum strength of the resonance between planets
     '''
-    maxorder = 2
+    maxorder = MAXORDER
     ps = sim.particles
     n1 = ps[i1].n
     n2 = ps[i2].n
