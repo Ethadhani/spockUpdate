@@ -40,12 +40,10 @@ class Trio:
             self.features['EMfracstd' + each] = np.nan
             self.features['EPstd' + each] = np.nan
             self.features['MMRstrength' + each] = np.nan
-            self.features['hillFac' + each] = np.nan
 
         # add keys here for features that belong to trio as a whole
         self.features['MEGNO'] = np.nan
         self.features['MEGNOstd'] = np.nan
-
 
     def fill_starting_features(self, sim):
         '''Fill the features that only depend on initial conditions
@@ -55,7 +53,6 @@ class Trio:
         for [label, i1, i2] in self.pairs:
             # calculate crossing eccentricity
             self.features['EMcross' + label] = (ps[i2].a - ps[i1].a) / ps[i1].a
-            self.features['hillFac' + label] = hillfac(sim, i1, i2)
             
         # calculate secular timescale and adds feature
         self.features['Tsec']= get_min_secT_trio(sim, self.trio)
@@ -230,8 +227,7 @@ def hillfac(sim, i1=1, i2=2):
         i1: index of the inner planet
         i2: index of the outer planet
     Returns:
-        hillFac: the information necessary to determine if a two planet system is stable or 
-        not. 
+        hillFac: Returns sqrt(|(p/a)/(p/a)_crit}) (see Gladman 1993 and Marchal and Bozis 1982). 
 
         If hillFac > 1: stable (close approaches are not allowed). If hillFac < 1: unstable 
         (close approaches are allowed)
@@ -243,7 +239,7 @@ def hillfac(sim, i1=1, i2=2):
 
     M = m1 + m2 + m0  # total system mass 
 
-    M_prod = m1*m2 + m1*m0 + m2*m0 
+    M_prod = m1*m2 + m1*m0 + m2*m0
 
     G = sim.G # gravitational constant
 
@@ -254,9 +250,9 @@ def hillfac(sim, i1=1, i2=2):
         v_j = np.array([ps[j].vx, ps[j].vy, ps[j].vz])
 
         c_vec += ps[j].m * np.cross(r_j, v_j) # angular momentum vector
-    
-        v = np.linalg.norm(v_j) 
-        m_j = ps[j].m 
+
+        v = np.linalg.norm(v_j)
+        m_j = ps[j].m
 
         KE += 0.5 * m_j * (v**2) # add each particle
 
@@ -268,22 +264,26 @@ def hillfac(sim, i1=1, i2=2):
         r_a = np.array([ps[j1].x, ps[j1].y, ps[j1].z])
         r_b = np.array([ps[j2].x, ps[j2].y, ps[j2].z])
         r = np.linalg.norm(r_a - r_b)
-        
+
         m_a = ps[j1].m
         m_b = ps[j2].m
 
         U += - (G*m_a*m_b)/r # add all of the potential energies     
-    
+
     h = KE + U
 
-    # calculate p/a from Eq. 12
-    param = - ((2*M) / (G**2 * M_prod**3)) * c**2 * h 
-    
-    # calculate p/a_crit from Eq. 13
-    term1 = ((3**(4/3)) * (m1 * m2)) / (m0**(2/3) * (m1 + m2)**(4/3))
-    paramCrit = 1 + term1  # ignore remaining terms since it only gets smaller
-    
-    hillFac = (abs((param - 1) / (paramCrit - 1)))**(1/2)
+    # calculate p/a from Eq. 12 of Gladman 1993
+    pOvera = - ((2*M) / (G**2 * M_prod**3)) * c**2 * h
+
+    # calculate p/a_crit -1 from Eq. 13, always > 0
+    pOveraCritMinus1 = ((3**(4/3)) * (m1 * m2)) / (m0**(2/3) * (m1 + m2)**(4/3))
+
+    # ignore remaining terms since it only gets smaller
+    sign = np.sign(pOvera-1) # if this is negative we always fail Hill criterion
+
+    # hillFac reduces to Delta/Deltacrit in the limit of low-mass planets on coplanar, circular orbits
+
+    hillFac = sign*(abs((pOvera - 1)) / pOveraCritMinus1)**(1/2)
 
     return hillFac
 

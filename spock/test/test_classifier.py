@@ -47,14 +47,14 @@ def unstable2psim():
     sim = rebound.Simulation()
     sim.add(m=1.)
     sim.add(m=1.e-4, P=1)
-    sim.add(m=1.e-4, P=1.01)
+    sim.add(m=1.e-4, P=1.01, f=np.pi)
     return sim
 
 def stable2psim():
     sim = rebound.Simulation()
     sim.add(m=1.)
     sim.add(m=1.e-4, P=1)
-    sim.add(m=1.e-4, P=2.3)
+    sim.add(m=1.e-4, P=2.3, f=np.pi)
     return sim
 
 def singlesim():
