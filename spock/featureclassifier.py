@@ -6,7 +6,7 @@ import numpy as np
 import rebound
 import xgboost as xgb
 from xgboost.sklearn import XGBClassifier
-from .simsetup import init_sim_parameters
+from .simsetup import setup_sim
 from multiprocessing import cpu_count
 from multiprocessing.pool import ThreadPool
 import os
@@ -125,13 +125,7 @@ class FeatureClassifier:
     def _generate_features(self, sim, Nbodytmax):
         # internal function that generates features for an individual simulation. User uses generate_features wrapper
 
-        # copy sim so as to not alter if supported
-        if float(rebound.__version__[0]) >= 4:
-            sim = sim.copy()
-        else:
-            warnings.warn('Due to old REBOUND, SPOCK will change sim in place')
-
-        init_sim_parameters(sim) #initializes the simulation
+        sim = setup_sim(sim) # returns initialized copy rotated to invariable plane
 
         # calculate Norbits for how long to run short integration and number of outputs Nout
 

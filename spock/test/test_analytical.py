@@ -4,7 +4,7 @@ import rebound
 
 from spock import AnalyticalClassifier, NbodyRegressor
 from spock.feature_functions import get_tseries
-from spock.simsetup import init_sim_parameters
+from spock.simsetup import setup_sim 
 
 
 def unstablesimecc():
@@ -87,7 +87,7 @@ class TestClassifier(unittest.TestCase):
 
     def test_same_trajectory(self):
         sim = longstablesim()
-        init_sim_parameters(sim)
+        sim = setup_sim(sim)
         _, _ = get_tseries(sim, (1e4, 80, [[1,2,3]]))
         x1 = sim.particles[1].x
 

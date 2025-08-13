@@ -7,7 +7,7 @@ import rebound
 from celmech import Poincare
 from celmech.secular import LaplaceLagrangeSystem
 
-from .simsetup import init_sim_parameters
+from .simsetup import setup_sim
 
 def eminus_max(lsys, Lambda, i1, i2):
     if i1 > i2:
@@ -62,7 +62,7 @@ def calc_tau_pairs(sim, indexpairs, LL_modulation=True):
     the Laplace-Lagrange secular cycle
     If False, it will use the initial value of the anti-aligned eccentricity
     '''
-    if np.isnan(sim.dt): # init_sim_parameters sets timestep to nan if any orbit is hyperbolic. Return tau=inf, i.e. chaotic/unstable
+    if np.isnan(sim.dt): # setup_sim sets timestep to nan if any orbit is hyperbolic. Return tau=inf, i.e. chaotic/unstable
         tau = np.inf 
         return tau
 
@@ -84,7 +84,7 @@ def calc_tau(sim):
     Calculates tau for each planet using adjacent neighbors, taking the maximum eminus over the Laplace-Lagrange secular cycle.
     Returns the maximum tau among the values calculated for each of the planets.
     '''
-    if np.isnan(sim.dt): # init_sim_parameters sets timestep to nan if any orbit is hyperbolic. Return tau=inf, i.e. chaotic/unstable
+    if np.isnan(sim.dt): # setup_sim sets timestep to nan if any orbit is hyperbolic. Return tau=inf, i.e. chaotic/unstable
         tau = np.inf 
         return tau
     lsys = LaplaceLagrangeSystem.from_Simulation(sim)
@@ -117,8 +117,7 @@ class AnalyticalClassifier():
 
         args = []
         for s in sim:
-            s = s.copy()
-            init_sim_parameters(s)
+            sim = setup_sim(s)
             minP = np.min([p.P for p in s.particles[1:s.N_real]])
             self.check_errors(s)
             args.append(s)

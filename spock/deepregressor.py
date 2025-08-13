@@ -13,7 +13,7 @@ import torch
 from scipy.integrate import quad
 from scipy.interpolate import interp1d
 
-from .simsetup import init_sim_parameters
+from .simsetup import setup_sim
 from .spock_reg_model import load_swag_safetensors
 from .tseries_feature_functions import get_extended_tseries
 
@@ -34,8 +34,7 @@ def exponential_decaying_prior(decay_rate):
 profile = lambda _: _
 
 def generate_dataset(sim):
-    sim = sim.copy()
-    init_sim_parameters(sim, megno=False, safe_mode=0)
+    sim = setup_sim(sim, megno=False, safe_mode=0)
     if sim.N_real < 4:
         raise AttributeError("SPOCK Error: SPOCK only works for systems with 3 or more planets")
     trios = [[i,i+1,i+2] for i in range(1,sim.N_real-2)] # list of adjacent trios

@@ -5,7 +5,7 @@ import rebound
 
 from spock import NbodyRegressor
 from spock.feature_functions import features
-from spock.simsetup import init_sim_parameters
+from spock.simsetup import setup_sim
 
 
 def unstablesim():
@@ -145,14 +145,14 @@ class TestNbody(unittest.TestCase):
     def test_same_traj_as_feature_classifier(self):
         # procedure in featureclassifier
         sim = unstablesim()
-        init_sim_parameters(sim)                            
+        sim = setup_sim(sim)                            
         trios = [[i,i+1,i+2] for i in range(1,sim.N_real-2)]
         featureargs = [10000, 80, trios]                    
         triofeatures, stable = features(sim, featureargs)   
         tfc = sim.t
 
         sim = unstablesim()
-        init_sim_parameters(sim)
+        sim = setup_sim(sim)
         try:
             sim.integrate(1e4*sim.particles[1].P, exact_finish_time=0)
         except rebound.Collision:

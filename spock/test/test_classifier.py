@@ -7,7 +7,7 @@ from sklearn import metrics
 from sklearn.metrics import roc_curve, confusion_matrix, auc
 from spock import FeatureClassifier, NbodyRegressor
 from spock.feature_functions import get_tseries
-from spock.simsetup import init_sim_parameters
+from spock.simsetup import setup_sim 
 from spock.features import Trio
 
 def get_sim(row, dataset):
@@ -48,6 +48,20 @@ def unstable2psim():
     sim.add(m=1.)
     sim.add(m=1.e-4, P=1)
     sim.add(m=1.e-4, P=1.01, f=np.pi)
+    return sim
+
+def unstable2psimhyperbolic():
+    sim = rebound.Simulation()
+    sim.add(m=1.)
+    sim.add(m=1.e-4, a=-1, e=1.01)
+    sim.add(m=1.e-4, a=-1.05, e=1.01, f=np.pi/6)
+    return sim
+
+def unstable2psimhighe():
+    sim = rebound.Simulation()
+    sim.add(m=1.)
+    sim.add(m=1.e-4, a=1, e=.99)
+    sim.add(m=1.e-4, a=1.05, e=0.99, f=np.pi/6)
     return sim
 
 def stable2psim():
@@ -171,7 +185,7 @@ class TestClassifier(unittest.TestCase):
 
     def test_same_trajectory(self):
         sim = longstablesim()
-        init_sim_parameters(sim)
+        sim = setup_sim(sim)
         testClass = FeatureClassifier()
         trios = [Trio(trio_indices=[1,2,3], sim=sim, Nout=80)]
         _, _ = testClass.get_tseries(sim, trios, Norbits=1e4, Nout=80)
@@ -202,6 +216,16 @@ class TestClassifier(unittest.TestCase):
 
     def test_unstable2p(self):
         sim = unstable2psim()
+        prob = self.model.predict_stable(sim)
+        self.assertEqual(prob, 0)
+
+    def test_unstable2phyperbolic(self):
+        sim = unstable2psimhyperbolic()
+        prob = self.model.predict_stable(sim)
+        self.assertEqual(prob, 0)
+
+    def test_unstable2phighe(self):
+        sim = unstable2psimhighe()
         prob = self.model.predict_stable(sim)
         self.assertEqual(prob, 0)
 

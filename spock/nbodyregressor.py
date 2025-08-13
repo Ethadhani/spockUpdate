@@ -4,14 +4,14 @@ from multiprocessing.pool import ThreadPool
 import numpy as np
 import rebound
 
-from .simsetup import init_sim_parameters
+from .simsetup import setup_sim
 
 
 class NbodyRegressor():
     def __init__(self):
         pass 
     
-    def predict_instability_time(self, sim, tmax=None, archive_filename=None, archive_interval=None, n_jobs=-1, match_training=False):
+    def predict_instability_time(self, sim, tmax=None, archive_filename=None, archive_interval=None, n_jobs=-1): 
         """
         Predict instability time through N-body integration.
 
@@ -22,7 +22,6 @@ class NbodyRegressor():
         archive_filename (str):     Path and filename to store a rebound SimulationArchive of snapshots
         archive_interval (float):   Time between snapshots for SimulationArchive (in Simulation time units)
         n_jobs (int):               Number of cores to use for calculation (only if passing more than one simulation). Default: Use all available cores. 
-        match_training (bool):      In order to match the exact chaotic trajectory given an input orbital configuration from our training set, need to set match_training=True. False gives an equally valid chaotic realization, and gives a factor of ~2 speedup in evaluation.
 
         Returns:
 
@@ -41,11 +40,7 @@ class NbodyRegressor():
 
         args = []
         for i, s in enumerate(sim):
-            s = s.copy()
-            if match_training == True:
-                init_sim_parameters(s)
-            else:
-                init_sim_parameters(s, megno=False, safe_mode=0)
+            s = setup_sim(s, megno=False, safe_mode=0)
             minP = np.min([p.P for p in s.particles[1:s.N_real]])
             if tmax[i] is None:
                 tmax[i] = 1e9*minP
@@ -97,7 +92,7 @@ class NbodyRegressor():
 
         return tinst, lower, upper
 
-    def predict_stable(self, sim, tmax=None, archive_filename=None, archive_interval=None, n_jobs=-1, match_training=False):
+    def predict_stable(self, sim, tmax=None, archive_filename=None, archive_interval=None, n_jobs=-1):
         """
         Predict whether system is stable up to time=tmax through N-body integration.
 
@@ -108,7 +103,6 @@ class NbodyRegressor():
         archive_filename (str):     Path and filename to store a rebound SimulationArchive of snapshots
         archive_interval (float):   Time between snapshots for SimulationArchive (in Simulation time units)
         n_jobs (int):               Number of cores to use for calculation (only if passing more than one simulation). Default: Use all available cores. 
-        match_training (bool):      In order to match the exact chaotic trajectory given an input orbital configuration from our training set, need to set match_training=True. False gives an equally valid chaotic realization, and gives a factor of ~2 speedup in evaluation.
 
         Returns:
 
@@ -116,7 +110,7 @@ class NbodyRegressor():
         int:    1 if integration reached tmax, 0 if Hill spheres crossed
         """
  
-        tinst, lower, upper = self.predict_instability_time(sim, tmax, archive_filename, archive_interval, n_jobs, match_training) 
+        tinst, lower, upper = self.predict_instability_time(sim, tmax, archive_filename, archive_interval, n_jobs)
         # If tmax == None, each sim can have different tmaxs
         # Use fact that if confidence intervals == 0, we hit tmax limit
         # (lower = np.nan if error, >0 if hit instability)

@@ -35,8 +35,15 @@ def set_integrator_and_timestep(sim):
     else:
         sim.integrator = "whfast"
 
-def init_sim_parameters(sim, megno=True, safe_mode=1): 
+def setup_sim(sim, megno=True, safe_mode=1):
+    # makes a copy and returns an initialized sim rotated to invariable plane
     # if megno=False and safe_mode=0, integration will be 2x faster. But means we won't get the same trajectory realization for the systems in the training set, but rather a different equally valid realization. We've tested that this doesn't affect the performance of the model (as it shouldn't!).
+
+    # copy sim so as to not alter if supported
+    if float(rebound.__version__[0]) >= 4:
+        sim = sim.copy()
+    else:
+        warnings.warn('Due to old REBOUND, SPOCK will change sim in place')
 
     check_valid_sim(sim)
 
