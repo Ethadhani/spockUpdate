@@ -68,7 +68,6 @@ def setup_sim(sim, megno=True, safe_mode=1):
         sim.init_megno(seed=0)
    
     set_integrator_and_timestep(sim)
-
     # Set particle radii to their individual Hill radii. 
     # Exact collision condition doesn't matter, but this behaves at extremes.
     # Imagine huge M1, tiny M2 and M3. Don't want to set middle planet's Hill 

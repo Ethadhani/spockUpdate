@@ -58,7 +58,6 @@ class TestClassifier(unittest.TestCase):
         self.model = AnalyticalClassifier()
     
     def test_list(self):
-        stable_target = [0, 0, 0, 0.7]
         stable = self.model.predict_stable([hyperbolicsim(), unstablesimecc(), longstablesim()])
         self.assertEqual(stable[0], 0)
         self.assertEqual(stable[1], 0)
@@ -84,7 +83,7 @@ class TestClassifier(unittest.TestCase):
         p1 = self.model.predict_stable(sim)
         p2 = self.model.predict_stable(sim)
         self.assertEqual(p1, p2)
-
+    
     def test_same_trajectory(self):
         sim = longstablesim()
         sim = setup_sim(sim)
@@ -110,7 +109,7 @@ class TestClassifier(unittest.TestCase):
             p.vx += 1000
         p_moving = self.model.predict_stable(sim)
         self.assertAlmostEqual(p_com, p_moving, delta=1.e-2)
-   
+    
     def test_rescale_distances(self):
         sim = longstablesim()
         p0 = self.model.predict_stable(sim)
@@ -128,7 +127,7 @@ class TestClassifier(unittest.TestCase):
         sim = rescale(sim, dscale=1, tscale=1e10, mscale=1)
         p1 = self.model.predict_stable(sim)
         self.assertAlmostEqual(p0, p1, delta=1.e-1)
-
+    
     def test_rescale_masses(self):
         sim = longstablesim()
         p0 = self.model.predict_stable(sim)
@@ -138,17 +137,18 @@ class TestClassifier(unittest.TestCase):
         p1 = self.model.predict_stable(sim)
         self.assertAlmostEqual(p0, p1, delta=1.e-2)
     
-    def test_hyperbolic(self):
-        sim = hyperbolicsim()
-        self.assertEqual(self.model.predict_stable(sim), 0)
+    def test_stable(self):
+        sim = longstablesim()
+        self.assertGreater(self.model.predict_stable(sim), 0.7)
+    
     
     def test_unstable_in_short_integration(self):
         sim = unstablesimecc()
         self.assertEqual(self.model.predict_stable(sim), 0)
    
-    def test_stable(self):
-        sim = longstablesim()
-        self.assertGreater(self.model.predict_stable(sim), 0.7)
-    
+    def test_hyperbolic(self):
+        sim = hyperbolicsim()
+        self.assertEqual(self.model.predict_stable(sim), 0)
+
 if __name__ == '__main__':
     unittest.main()

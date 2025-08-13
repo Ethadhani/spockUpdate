@@ -117,7 +117,7 @@ class AnalyticalClassifier():
 
         args = []
         for s in sim:
-            sim = setup_sim(s)
+            s = setup_sim(s)
             minP = np.min([p.P for p in s.particles[1:s.N_real]])
             self.check_errors(s)
             args.append(s)
