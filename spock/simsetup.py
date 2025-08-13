@@ -79,6 +79,8 @@ def setup_sim(sim, megno=True, safe_mode=1):
         p.r = rH
     
     sim.move_to_com()
+    
+    return sim
 
 # function to get planet radii from their masses (according to Wolfgang+2016)
 def get_rad(m):
