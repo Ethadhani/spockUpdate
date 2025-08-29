@@ -46,6 +46,10 @@ def setup_sim(sim, megno=True, safe_mode=1):
         warnings.warn('Due to old REBOUND, SPOCK will change sim in place')
 
     check_valid_sim(sim)
+    
+    # rotate into the invariable plane to avoid user errors using i~90 in observer elements
+    rot = rebound.Rotation.to_new_axes(newz=sim.angular_momentum())
+    sim.rotate(rot)
 
     try:
         sim.collision = 'line'  # use line if using newer version of REBOUND
