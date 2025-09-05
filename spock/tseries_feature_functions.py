@@ -268,19 +268,14 @@ def get_collision_tseries(sim, trio_inds, seed=None):
 
     for t in times:
         trio_sim.integrate(t, exact_finish_time=0)
-
         # check for ejected planets
-        if len(ps) == 4:
-            if (not 0.0 < ps[1].a < 50.0) or (not 0.0 < ps[1].e < 1.0):
-                trio_sim.remove(1)
-                global_col_probs = np.array([0.0, 0.0, 0.0])
-            elif (not 0.0 < ps[2].a < 50.0) or (not 0.0 < ps[2].e < 1.0):
-                trio_sim.remove(2)
-                global_col_probs = np.array([0.0, 0.0, 0.0])
-            elif (not 0.0 < ps[3].a < 50.0) or (not 0.0 < ps[3].e < 1.0):
-                trio_sim.remove(3)
-                global_col_probs = np.array([0.0, 0.0, 0.0])
-
+        to_remove = []
+        for j, p in enumerate(ps[1:]):
+            if p.d > 50.:
+                to_remove.append(j+1)
+                global_col_probs = np.array([0., 0., 0.])
+        for j in to_remove:
+            trio_sim.remove(j) 
         # if there was no merger/ejection, record states
         if len(ps) == 4:
             if ps[1].inc == 0.0 or ps[2].inc == 0.0 or ps[3].inc == 0.0:
@@ -300,7 +295,7 @@ def get_collision_tseries(sim, trio_inds, seed=None):
                                np.cos(ps[1].pomega), np.cos(ps[2].pomega), np.cos(ps[3].pomega),
                                np.sin(ps[1].Omega), np.sin(ps[2].Omega), np.sin(ps[3].Omega),
                                np.cos(ps[1].Omega), np.cos(ps[2].Omega), np.cos(ps[3].Omega)])
-    
+   
     # change axis orientation back to original sim here
     for p in trio_sim.particles[:trio_sim.N_real]:
         p.x, p.y, p.z = npEulerAnglesTransform(p.xyz, -theta1, -theta2, 0)
