@@ -3,7 +3,7 @@ import os
 import torch
 import warnings
 import rebound as rb
-from .simsetup import scale_sim, align_simulation, get_rad, revert_sim_units, npEulerAnglesTransform, replace_p, replace_trio
+from .simsetup import scale_sim, get_rad, revert_sim_units, replace_p, replace_trio
 from .tseries_feature_functions import get_collision_tseries
 
 # pytorch MLP
@@ -198,9 +198,7 @@ class CollisionOrbitalOutcomeRegressor():
                     warnings.warn('Removing planet with unphysical orbital elements')
                 new_state_sim.move_to_com()
 
-                for p in new_state_sim.particles[:new_state_sim.N]:
-                    p.x, p.y, p.z = npEulerAnglesTransform(p.xyz, -trio_sims[k].theta1, -trio_sims[k].theta2, 0)
-                    p.vx, p.vy, p.vz = npEulerAnglesTransform(p.vxyz, -trio_sims[k].theta1, -trio_sims[k].theta2, 0)
+                new_state_sim.rotate(trio_sims[k].rot.inverse()) # rotate back to original orientation
 
                 # replace trio with predicted duo (or single/zero if planets have unphysical orbital elements)
                 new_sims.append(replace_trio(sims[i], trio_inds[i], new_state_sim))

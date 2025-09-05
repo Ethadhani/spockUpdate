@@ -3,7 +3,7 @@ import numpy as np
 import rebound
 from scipy.optimize import brenth
 from .feature_functions import find_strongest_MMR
-from .simsetup import scale_sim, align_simulation, get_rad, npEulerAnglesTransform, revert_sim_units
+from .simsetup import scale_sim, get_rad, revert_sim_units
 
 # sorts out which pair of planets has a smaller EMcross, labels that pair inner, other adjacent pair outer
 # returns a list of two lists, with [label (near or far), i1, i2], where i1 and i2 are the indices, with i1 
@@ -244,8 +244,8 @@ def get_collision_tseries(sim, trio_inds, seed=None):
     ps = trio_sim.particles
 
     # align z-axis with direction of angular momentum
-    theta1, theta2 = align_simulation(trio_sim)
-
+    rot = rebound.Rotation.to_new_axes(newz=trio_sim.angular_momentum())
+    trio_sim.rotate(rot)
     # assign planet radii
     for i in range(1, len(ps)):
         ps[i].r = get_rad(ps[i].m)
@@ -268,19 +268,14 @@ def get_collision_tseries(sim, trio_inds, seed=None):
 
     for t in times:
         trio_sim.integrate(t, exact_finish_time=0)
-
         # check for ejected planets
-        if len(ps) == 4:
-            if (not 0.0 < ps[1].a < 50.0) or (not 0.0 < ps[1].e < 1.0):
-                trio_sim.remove(1)
-                global_col_probs = np.array([0.0, 0.0, 0.0])
-            elif (not 0.0 < ps[2].a < 50.0) or (not 0.0 < ps[2].e < 1.0):
-                trio_sim.remove(2)
-                global_col_probs = np.array([0.0, 0.0, 0.0])
-            elif (not 0.0 < ps[3].a < 50.0) or (not 0.0 < ps[3].e < 1.0):
-                trio_sim.remove(3)
-                global_col_probs = np.array([0.0, 0.0, 0.0])
-
+        to_remove = []
+        for j, p in enumerate(ps[1:]):
+            if p.d > 50.:
+                to_remove.append(j+1)
+                global_col_probs = np.array([0., 0., 0.])
+        for j in to_remove:
+            trio_sim.remove(j) 
         # if there was no merger/ejection, record states
         if len(ps) == 4:
             if ps[1].inc == 0.0 or ps[2].inc == 0.0 or ps[3].inc == 0.0:
@@ -300,12 +295,10 @@ def get_collision_tseries(sim, trio_inds, seed=None):
                                np.cos(ps[1].pomega), np.cos(ps[2].pomega), np.cos(ps[3].pomega),
                                np.sin(ps[1].Omega), np.sin(ps[2].Omega), np.sin(ps[3].Omega),
                                np.cos(ps[1].Omega), np.cos(ps[2].Omega), np.cos(ps[3].Omega)])
-    
+   
     # change axis orientation back to original sim here
-    for p in trio_sim.particles[:trio_sim.N_real]:
-        p.x, p.y, p.z = npEulerAnglesTransform(p.xyz, -theta1, -theta2, 0)
-        p.vx, p.vy, p.vz = npEulerAnglesTransform(p.vxyz, -theta1, -theta2, 0)
+    trio_sim.rotate(rot.inverse())
     
     trio_sim = revert_sim_units([trio_sim])[0]            # revert returns a list of length 1 when we pass 1 sim
-    trio_sim.theta1, trio_sim.theta2 = theta1, theta2    # store angles for rotation into invariant plane if needed
+    trio_sim.rot = rot                                    # store rotation object into invariant plane if needed
     return np.array(states), trio_sim, global_col_probs
